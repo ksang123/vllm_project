@@ -1,3 +1,119 @@
+
 # Benchmark configuration file
 # This file contains the configuration for the benchmark
 # It is used to configure the benchmark and the model
+
+# Server Configuration (for vllm serve)
+# These parameters are typically used when launching the VLLM server (vllm serve command)
+# and define how the model is loaded and served.
+server_config:
+  # The Hugging Face model ID or path to the model
+  model: "meta-llama/Llama-2-7b-hf"
+  # Tokenizer to use, often same as model
+  tokenizer: "meta-llama/Llama-2-7b-hf"
+  # The name of the model to be served
+  served_model_name: null
+  # Address of the running vLLM server
+  base_url: "http://127.0.0.1:8000"
+  # Host address to bind the server to
+  host: "127.0.0.1"
+  # Port the vLLM server is listening on
+  port: 8000
+  # Path to a file containing the chat template
+  chat_template: null
+  # Maximum context length for the model
+  max_model_len: 2048
+  # Fraction of GPU memory to be used (0.0 to 1.0)
+  gpu_memory_utilization: 0.9
+  # Data type for model weights (e.g., "auto", "float16", "bfloat16")
+  dtype: "auto"
+  # To use multiple gpus, this is the number of tensor parallel replicas
+  tensor_parallel_size: 1
+  # Quantization method (e.g., "awq", "gptq", null for no quantization)
+  quantization: null
+  # Enable prefix caching for better performance
+  enable_prefix_caching: true
+  # Tokenizer mode: 'auto' or 'slow'. 'auto' is faster, but 'slow' may be needed for some models.
+  tokenizer_mode: "auto"
+  # Allow use of custom code from the model's repository
+  trust_remote_code: false
+  # Use Ray for distributed serving
+  engine_use_ray: false
+  # Disable logging of request statistics
+  disable_log_stats: false
+  # Disable logging of requests
+  disable_log_requests: false
+  # Maximum number of sequences per iteration
+  max_num_seqs: 256
+  # Maximum number of batched tokens per iteration
+  max_num_batched_tokens: 4096
+  # Block size for vLLM's memory manager (e.g., 16, 32)
+  block_size: 16
+  # Size of the CPU swap space in GiB
+  swap_space: 4
+  # GiB of CPU memory to offload from GPU
+  cpu_offload_gb: 0
+  # Specific model revision to use (e.g., a git commit hash)
+  revision: null
+  # Specific code revision to use
+  code_revision: null
+  # Specific tokenizer revision to use
+  tokenizer_revision: null
+  # Maximum log length to print
+  max_log_len: null
+  # LoRA modules to load, e.g., ["user/repo", "user/repo2"]
+  lora_modules: []
+
+# Benchmark Workload Configuration
+# These parameters control the workload generated for the benchmark.
+benchmark_config:
+  # Dataset to use ("random", "ShareGPT", etc.)
+  dataset_name: "random"
+  # Total number of prompts to send during the test
+  num_prompts: 1000
+  # Maximum number of concurrent requests
+  max_concurrency: 16
+  # Target request generation rate (requests per second, "inf" for max throughput)
+  request_rate: "inf"
+  # Length (in tokens) of each generated input prompt (if dataset_name is "random")
+  random_input_len: 512
+  # Desired length (in tokens) of the model's output (if dataset_name is "random")
+  random_output_len: 128
+  # Sampling temperature for generation
+  temperature: 0.7
+  # Top-p sampling parameter
+  top_p: 0.95
+  # Random seed for reproducibility
+  seed: 42
+  # If true, generation will not stop at EOS token until max_output_len is reached
+  ignore_eos: false
+  # Number of output sequences to return for the given prompt
+  n: 1
+  # Number of output sequences that are generated from the prompt
+  best_of: 1
+  # Penalty for new tokens already in the prompt
+  presence_penalty: 0.0
+  # Penalty for new tokens based on their frequency in the prompt
+  frequency_penalty: 0.0
+  # Number of highest probability vocabulary tokens to keep for top-k-filtering
+  top_k: -1
+  # Whether to use beam search instead of sampling
+  use_beam_search: false
+  # A list of strings that will stop the generation
+  stop: []
+  # Whether to stream the output
+  stream: false
+  # Number of log probabilities to return
+  logprobs: null
+
+# Output and Reporting
+# These options relate to how the benchmark results are saved and presented.
+output_config:
+  # Directory to save benchmark results
+  output_dir: "./benchmark_results"
+  # Save detailed results in JSON format
+  save_json: true
+  # Generate and save performance charts
+  save_charts: true
+  # Show stats in the output
+  show_stats: true

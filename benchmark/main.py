@@ -1,6 +1,8 @@
 import subprocess
 import sys
 import argparse
+import os
+from config_handler import load_config
 
 # A list of common models for user convenience
 SUPPORTED_MODELS = [
@@ -52,27 +54,59 @@ def get_model_choice():
             print("Invalid choice. Please select a valid option from the menu.")
 
 
-def run_server(model_name, additional_args):
-    """Constructs and runs the vLLM server command."""
-    command = [
-        sys.executable,  # Use the same python interpreter
-        "-m",
-        "vllm.entrypoints.openai.api_server",
-        "--model",
-        model_name,
-    ]
+def build_command_from_config(config, additional_args):
+    """Builds a command list from a configuration dictionary."""
+    command = []
+    for key, value in config.items():
+        if value is not None:
+            # Convert key to a command-line argument
+            arg = f"--{key.replace('_', '-')}"
+            if isinstance(value, bool):
+                if value:
+                    command.append(arg)
+            elif isinstance(value, list):
+                for item in value:
+                    command.extend([arg, str(item)])
+            else:
+                command.extend([arg, str(value)])
 
-    # Add any additional arguments
+    # Override with additional args
     if additional_args:
         # The vllm entrypoint script doesn't like the '--' separator
         if additional_args and additional_args[0] == '--':
             additional_args.pop(0)
+
+        # Simple override: if an arg is in additional_args, it replaces the config value
+        # This is a simplification. A more robust solution would parse additional_args properly.
+        for i, arg in enumerate(additional_args):
+            if arg.startswith('--'):
+                arg_name = arg[2:].replace('-', '_')
+                # remove existing from command
+                for j, cmd_arg in enumerate(command):
+                    if cmd_arg == arg:
+                        # remove argument and its value
+                        command.pop(j)
+                        command.pop(j)
+                        break
         command.extend(additional_args)
+
+    return command
+
+
+def run_server(config, additional_args):
+    """Constructs and runs the vLLM server command."""
+    server_command_args = build_command_from_config(
+        config.get("server_config", {}), additional_args
+    )
+    command = [
+        sys.executable,  # Use the same python interpreter
+        "-m",
+        "vllm.entrypoints.openai.api_server",
+    ] + server_command_args
 
     print("\n🚀 Starting vLLM server with the following command:")
     # Format for readability
-    print("  " + " \
-    ".join(command))
+    print("  " + " ".join(command))
     print("\nTo stop the server, press Ctrl+C in this terminal.")
 
     try:
@@ -93,23 +127,20 @@ def run_server(model_name, additional_args):
             file=sys.stderr)
 
 
-def run_profiler(profile_args, additional_args):
+def run_profiler(config, profile_args, additional_args):
     """Constructs and runs the nsys profiler command."""
     nsys_command = [
         "nsys", "profile", "-t", "cuda,nvtx,osrt", "--force-overwrite", "true", "-o",
         profile_args.output
     ]
 
+    benchmark_command_args = build_command_from_config(
+        config.get("benchmark_config", {}), additional_args
+    )
     benchmark_command = [
         sys.executable,  # Use the project's python interpreter
-        "benchmark/open_ai_api.py"
-    ]
-
-    # Add any additional arguments for the benchmark script
-    if additional_args:
-        if additional_args and additional_args[0] == '--':
-            additional_args.pop(0)
-        benchmark_command.extend(additional_args)
+        "open_ai_api.py"
+    ] + benchmark_command_args
 
     command = nsys_command + benchmark_command
 
@@ -141,7 +172,8 @@ def main():
         "--model",
         type=str,
         help=
-        "Directly specify the model to serve, a new model will be created if one does not exist.")
+        "Directly specify the model to serve, overriding the config file.")
+    
     # Profiler mode arguments
     profile_group = parser.add_argument_group('Profiler Mode')
     profile_group.add_argument(
@@ -166,16 +198,27 @@ def main():
 
     args = parser.parse_args()
 
+    # Load configuration
+    config = load_config()
+    if not config:
+        sys.exit(1)
+
     if args.profile:
-        run_profiler(args, args.additional_args)
+        run_profiler(config, args, args.additional_args)
     else:
+        # Handle model override
         model_name = args.model
         if not model_name:
+            # only show menu if model is not passed via CLI
             display_menu()
             model_name = get_model_choice()
+            if model_name is None:
+                sys.exit(0) # User chose to exit
 
         if model_name:
-            run_server(model_name, args.additional_args)
+            config['server_config']['model'] = model_name
+
+        run_server(config, args.additional_args)
 
 
 if __name__ == "__main__":
