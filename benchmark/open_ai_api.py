@@ -1,6 +1,7 @@
 import argparse
 import random
 from openai import OpenAI
+import torch.cuda.nvtx as nvtx
 
 PROMPTS = [
     "Hello, I'm a language model,",
@@ -65,8 +66,11 @@ def main(args):
     else:
         prompts = [args.prompt]
 
+    nvtx.range_push("Benchmark Run")  # Start of the overall benchmark range
     for i, prompt in enumerate(prompts):
+        nvtx.range_push(f"Prompt {i+1}")  # Start range for a single prompt
         print(f"\n--- Prompt {i+1}/{len(prompts)}: '{prompt}' ---")
+        
         completion = client.completions.create(model=args.model,
                                                 prompt=prompt,
                                                 max_tokens=args.max_tokens)
@@ -81,6 +85,8 @@ def main(args):
                 f"Tokens — prompt: {completion.usage.prompt_tokens}, "
                 f"completion: {completion.usage.completion_tokens}, "
                 f"total: {completion.usage.total_tokens}")
+        nvtx.range_pop()  # End range for a single prompt
+    nvtx.range_pop()  # End of the overall benchmark range
 
 
 if __name__ == "__main__":
