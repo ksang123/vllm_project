@@ -102,7 +102,7 @@ if __name__ == "__main__":
                         help="API base URL for the vLLM server.")
     parser.add_argument("--model",
                         type=str,
-                        default="Qwen/Qwen2.5-3B-Instruct",
+                        default="Qwen/Qwen2.5-3B-Instruct",              ###########WE CHANGE THIS HERE!!!!!
                         help="The model to use for the benchmark.")
     parser.add_argument("--prompt",
                         type=str,
