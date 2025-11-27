@@ -1,0 +1,1 @@
+Write a capacity planning model for LLM inference that links user growth, prompt length distributions, batching effectiveness, hardware sizing, and SLOs to forecast required GPU inventory over the next 12 months.

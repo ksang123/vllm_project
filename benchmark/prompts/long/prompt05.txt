@@ -1,0 +1,1 @@
+Write a detailed migration plan to refactor a monolithic e-commerce platform into a domain-driven microservices architecture, covering service boundaries, strangler pattern phases, data migration strategy, contract testing, API gateways, observability, rollback mechanisms, and success metrics.

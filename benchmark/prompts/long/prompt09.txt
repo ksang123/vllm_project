@@ -1,0 +1,1 @@
+Outline a comprehensive evaluation framework for hallucination reduction in LLM responses, including benchmark datasets, scoring rubrics, human-in-the-loop review, automated detection heuristics, red-teaming protocols, and release gating criteria.

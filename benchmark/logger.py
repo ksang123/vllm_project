@@ -36,7 +36,7 @@ def setup_logger(log_file: str):
     info_handler = logging.StreamHandler(sys.stdout)
     info_handler.setLevel(logging.INFO)
     info_handler.addFilter(lambda record: record.levelno == logging.INFO)
-    info_formatter = logging.Formatter("%(message)s") # Simple format for info
+    info_formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(message)s", "%H:%M:%S")
     info_handler.setFormatter(info_formatter)
     logger.addHandler(info_handler)
 
@@ -44,7 +44,7 @@ def setup_logger(log_file: str):
     error_handler = logging.StreamHandler(sys.stderr)
     error_handler.setLevel(logging.WARNING) # Captures WARNING and ERROR
     error_formatter = logging.Formatter(
-        "%(asctime)s - %(levelname)s - %(message)s"
+        "%(asctime)s | %(levelname)s | %(message)s", "%Y-%m-%d %H:%M:%S"
     )
     error_handler.setFormatter(error_formatter)
     logger.addHandler(error_handler)

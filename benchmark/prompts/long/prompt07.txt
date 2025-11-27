@@ -1,0 +1,1 @@
+Develop a training curriculum for onboarding new machine learning engineers to a large-scale LLM serving stack, including prerequisites, hands-on labs, performance profiling, debugging tokenization/model issues, cost optimization, and best practices for safe rollouts.

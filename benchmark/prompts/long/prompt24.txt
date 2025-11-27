@@ -1,0 +1,1 @@
+Create a reproducible benchmark suite for latency and throughput under diverse prompt lengths and batch sizes, including fixture generation, automation scripts, acceptance thresholds, and reporting templates for regressions.

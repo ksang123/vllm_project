@@ -1,0 +1,1 @@
+Compose a thorough cost vs. quality benchmarking study across multiple LLM sizes and quantization levels, including test methodology, representative workloads, latency/throughput measurements, accuracy metrics, and recommendations for tiered deployment.

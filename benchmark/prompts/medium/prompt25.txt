@@ -1,0 +1,1 @@
+Outline how to set up a synthetic monitoring suite for an API, including request design, success criteria, and alert thresholds.

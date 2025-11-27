@@ -1,0 +1,1 @@
+Describe strategies for handling schema evolution in event payloads without breaking consumers.

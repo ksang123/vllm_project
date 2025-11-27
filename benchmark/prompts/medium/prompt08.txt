@@ -1,0 +1,1 @@
+Summarize the trade-offs between FP16, BF16, and INT8 quantization for inference.

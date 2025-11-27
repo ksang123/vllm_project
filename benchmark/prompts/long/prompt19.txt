@@ -1,0 +1,1 @@
+Produce a security threat model for an LLM API, enumerating attack vectors (prompt injection, abuse of tool-calling, data exfiltration), mitigations, monitoring signals, and incident response drills.

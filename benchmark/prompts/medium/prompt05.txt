@@ -1,0 +1,1 @@
+Explain what retrieval-augmented generation is and when it improves factual accuracy.

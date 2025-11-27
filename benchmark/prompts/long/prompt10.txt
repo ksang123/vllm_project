@@ -1,0 +1,1 @@
+Design a global monitoring and alerting strategy for a fleet of LLM inference endpoints across multiple regions, covering SLOs/SLIs, anomaly detection, synthetic checks, per-tenant dashboards, on-call rotations, runbooks, and periodic game days.

@@ -1,0 +1,1 @@
+Write a detailed plan to introduce guarded tool-calling to prevent prompt injection and privilege escalation, including intent classification, allow/deny lists, parameter validation, sandboxing, audit logging, and red-team evaluation workflows.

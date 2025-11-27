@@ -1,0 +1,1 @@
+Generate a detailed product requirements document for an enterprise knowledge assistant that integrates with multiple data sources, supports retrieval-augmented generation, enforces row-level security, provides auditability, and delivers multilingual support, including KPIs, user stories, success metrics, and rollout plan.

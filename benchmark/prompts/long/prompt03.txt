@@ -1,0 +1,1 @@
+Draft a comprehensive incident postmortem for a large-scale API outage caused by cascading failures in a microservices environment, including timeline, root cause analysis, contributing factors, impact quantification, detection gaps, remediation steps, preventative action items, and executive summary.

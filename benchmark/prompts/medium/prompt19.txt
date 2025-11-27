@@ -1,0 +1,1 @@
+Explain why idempotency is important for APIs and how to implement idempotent endpoints.

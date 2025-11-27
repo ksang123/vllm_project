@@ -8,6 +8,7 @@ import os
 import subprocess
 import sys
 import time
+import warnings
 from dataclasses import asdict, is_dataclass
 from statistics import mean
 from typing import Any
@@ -180,7 +181,7 @@ def _hist_summary(metric: dict[str, Any]) -> dict[str, float] | None:
     return out
 
 
-def _wait_for_server(base_url: str, api_key: str, logger, timeout: float = 90.0, interval: float = 2.0) -> None:
+def _wait_for_server(base_url: str, api_key: str, logger, timeout: float = 300.0, interval: float = 2.0) -> None:
     deadline = time.time() + timeout
     headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
     while time.time() < deadline:
@@ -287,19 +288,88 @@ def run_vllm(prompts: list[str], config: dict[str, Any], logger, debug: bool = F
     benchmark_cfg = config.get("benchmark_config", {})
     server_cfg = config.get("server_config", {})
     output_cfg = config.get("output_config", {})
+    telemetry_cfg = config.get("telemetry_config", {})
 
     host = server_cfg.get("host", "127.0.0.1")
     port = int(server_cfg.get("port", 8000))
-    server_cfg = {**server_cfg, "base_url": server_cfg.get("base_url", f"http://{host}:{port}")}
+    base_url = server_cfg.get("base_url") or f"http://{host}:{port}"
+    server_cfg = {**server_cfg, "base_url": base_url}
 
     logger.info(f"Starting vLLM server on {server_cfg.get('host', '127.0.0.1')}:{server_cfg.get('port', 8000)}")
     server_proc = _start_vllm_server(server_cfg, logger)
+
+    # Warmup if requested
+    warmup_n = int(benchmark_cfg.get("warmup_prompts", 0))
+    if warmup_n > 0:
+        warmup_prompts = prompts[:warmup_n]
+        logger.info(f"Warmup with {len(warmup_prompts)} prompts (not measured)")
+        warmup_cfg = dict(benchmark_cfg)
+        warmup_cfg["client_processes"] = 1  # keep simple for warmup
+        try:
+            send_requests(warmup_prompts, server_cfg, warmup_cfg, logger)
+        except Exception as exc:
+            logger.warning(f"Warmup failed but continuing: {exc}")
+        prompts = prompts[warmup_n:]
+
+    # Telemetry sampling (best effort)
+    telemetry_samples: dict[str, list[dict[str, float]]] = {"gpu": [], "cpu": []}
+    stop_telemetry = False
+
+    def _sample_telemetry():
+        import psutil  # type: ignore
+        try:
+            warnings.filterwarnings("ignore", category=FutureWarning, message="The pynvml package is deprecated.*")
+            from pynvml import nvmlDeviceGetHandleByIndex, nvmlDeviceGetMemoryInfo, nvmlDeviceGetUtilizationRates, nvmlInit, nvmlShutdown  # type: ignore
+
+            nvmlInit()
+            handle = nvmlDeviceGetHandleByIndex(0)
+            has_gpu = True
+        except Exception:
+            handle = None
+            has_gpu = False
+        interval = float(telemetry_cfg.get("sample_interval_s", 1.0))
+        while not stop_telemetry:
+            ts = time.time()
+            if telemetry_cfg.get("enable_cpu", True):
+                cpu = psutil.cpu_percent(interval=None)
+                telemetry_samples["cpu"].append({"ts": ts, "cpu_percent": cpu})
+            if telemetry_cfg.get("enable_gpu", True) and has_gpu and handle:
+                try:
+                    util = nvmlDeviceGetUtilizationRates(handle)
+                    mem = nvmlDeviceGetMemoryInfo(handle)
+                    telemetry_samples["gpu"].append(
+                        {
+                            "ts": ts,
+                            "gpu_util_percent": util.gpu,
+                            "mem_util_percent": (mem.used / mem.total) * 100 if mem.total else 0.0,
+                            "mem_used_bytes": mem.used,
+                            "mem_total_bytes": mem.total,
+                        }
+                    )
+                except Exception:
+                    pass
+            time.sleep(interval)
+        if has_gpu:
+            try:
+                nvmlShutdown()
+            except Exception:
+                pass
+
+    telemetry_thread = None
+    if telemetry_cfg.get("enable_cpu", True) or telemetry_cfg.get("enable_gpu", True):
+        import threading
+
+        telemetry_thread = threading.Thread(target=_sample_telemetry, daemon=True)
+        telemetry_thread.start()
 
     logger.info(f"Sending {len(prompts)} prompts to {server_cfg.get('base_url')}")
     try:
         send_result = send_requests(prompts, server_cfg, benchmark_cfg, logger)
     finally:
         _stop_vllm_server(server_proc, logger)
+        stop_telemetry = True
+        if telemetry_thread:
+            telemetry_thread.join(timeout=2)
 
     per_request = send_result["per_request"]
     total_time = send_result["total_time"]
@@ -390,6 +460,13 @@ def run_vllm(prompts: list[str], config: dict[str, Any], logger, debug: bool = F
             "external_prefix_hit_rate": _ratio("vllm:external_prefix_cache_hits", "vllm:external_prefix_cache_queries"),
             "mm_cache_hit_rate": _ratio("vllm:mm_cache_hits", "vllm:mm_cache_queries"),
         }
+
+    client_metrics = send_result.get("client_metrics") or []
+    if client_metrics:
+        results["client_metrics"] = client_metrics
+
+    if telemetry_samples:
+        results["telemetry"] = telemetry_samples
 
     if output_cfg.get("save_charts", True):
         out_dir = output_cfg.get("output_dir", "./output")

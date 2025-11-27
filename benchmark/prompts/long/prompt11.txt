@@ -1,0 +1,1 @@
+Construct a rollout and validation plan for introducing speculative decoding in a high-traffic chat API, covering model selection, fallback triggers, online A/B testing, quality/latency KPIs, safety checks, and automated rollback criteria.

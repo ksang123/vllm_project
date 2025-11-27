@@ -1,0 +1,1 @@
+Describe a staged rollout plan to switch an LLM endpoint to a new model version, covering canarying, evaluation against holdout traffic, regression checks on latency and quality, safety guard validations, and criteria for full cutover or rollback.

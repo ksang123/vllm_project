@@ -1,0 +1,1 @@
+Describe how vector databases support semantic search and what index structures they rely on.

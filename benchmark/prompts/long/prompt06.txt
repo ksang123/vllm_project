@@ -1,0 +1,1 @@
+Create a comprehensive security hardening guide for an AI inference cluster that addresses network segmentation, IAM, secret management, data encryption at rest and in transit, supply-chain risks, logging/monitoring, vulnerability management, and incident response runbooks tailored to model-serving workloads.

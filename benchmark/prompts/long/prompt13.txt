@@ -1,0 +1,1 @@
+Write a disaster recovery playbook for a regional outage affecting LLM serving, detailing traffic failover, model cache warmup in secondary regions, config/version sync, dependency checks, data consistency concerns, and post-incident validation.

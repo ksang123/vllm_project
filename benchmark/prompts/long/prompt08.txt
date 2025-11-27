@@ -1,0 +1,1 @@
+Produce an implementation plan for adding streaming output and tool-calling capabilities to an existing chat API, detailing protocol changes, backward compatibility, SDK updates, server-side state management, latency/throughput impacts, and observability additions.

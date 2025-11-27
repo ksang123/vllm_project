@@ -1,0 +1,1 @@
+Design a cost-optimization strategy for an LLM inference platform, including model tiering, autoscaling policies, spot/preemptible usage, batching heuristics, KV cache sizing, and per-tenant budget controls with alerts.

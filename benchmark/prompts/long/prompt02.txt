@@ -1,0 +1,1 @@
+Write an in-depth technical architecture for a multi-region, fault-tolerant, low-latency conversational AI platform that handles 100k concurrent users, covering model serving topology, autoscaling strategy, caching layers, sharding keys, observability, disaster recovery, blue/green deploys, and cost controls.

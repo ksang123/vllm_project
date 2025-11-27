@@ -1,0 +1,1 @@
+Create a comprehensive guide for evaluating instruction-following quality across diverse tasks, including prompt design, rubric creation, human rating protocols, inter-rater reliability checks, and aggregation of scores into actionable metrics.

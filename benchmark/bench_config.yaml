@@ -1,129 +1,60 @@
-# Benchmark configuration file
-# This file contains the configuration for the benchmark
-# It is used to configure the benchmark and the model
+# Minimal benchmark configuration focused on performance.
 
-# Logging Configuration
 log_config:
-  # The file to write logs to
   log_file: "benchmark.log"
 
-# Server Configuration (for vllm serve)
-# These parameters are typically used when launching the VLLM server (vllm serve command)
-# and define how the model is loaded and served.
 server_config:
-  # The Hugging Face model ID or path to the model (e.g., "meta-llama/Llama-2-7b-hf")
-  model: "Qwen/Qwen2.5-3B-Instruct"
-  # Tokenizer to use, often same as model (e.g., "meta-llama/Llama-2-7b-hf")
-  tokenizer: "Qwen/Qwen2.5-3B-Instruct"
-  # The name of the model to be served (e.g., "my-custom-model", null for default)
-  served_model_name: null
-  # Address of the running vLLM server (e.g., "http://127.0.0.1:8000")
-  base_url: "http://127.0.0.1:8000"
-  # API key for the vLLM server (e.g., "EMPTY", "vllm-rocks")
+  model: "Qwen/Qwen3-14B"
   api_key: "EMPTY"
-  # Host address to bind the server to (e.g., "127.0.0.1", "0.0.0.0" for all interfaces)
   host: "127.0.0.1"
-  # Port the vLLM server is listening on (e.g., 8000)
   port: 8000
-  # Path to a file containing the chat template (e.g., "/path/to/chat_template.jinja", null for default)
-  chat_template: null
-  # Maximum context length for the model (e.g., 2048, 4096, 8192)
-  max_model_len: 2048
-  # Fraction of GPU memory to be used (0.0 to 1.0, e.g., 0.9)
+  base_url: null  # auto-derived from host/port if null
+  max_model_len: 32768
   gpu_memory_utilization: 0.9
-  # Data type for model weights (e.g., "auto", "float16", "bfloat16", "float")
   dtype: "auto"
-  # Number of tensor parallel replicas to use across multiple GPUs (e.g., 1, 2, 4)
-  tensor_parallel_size: 1
-  # Quantization method (e.g., "awq", "gptq", "squeezellm", null for no quantization)
+  tensor_parallel_size: 2
   quantization: null
-  # Enable prefix caching for better performance (true or false)
   enable_prefix_caching: true
-  # Tokenizer mode: 'auto' or 'slow'. 'auto' is faster, but 'slow' may be needed for some models.
   tokenizer_mode: "auto"
-  # Allow use of custom code from the model's repository (true or false)
   trust_remote_code: false
-  # Use Ray for distributed serving (true or false)
   engine_use_ray: false
-  # Disable logging of request statistics (true or false)
   disable_log_stats: false
-  # Disable logging of requests (true or false)
   disable_log_requests: false
-  # Maximum number of sequences per iteration (e.g., 256, 512)
   max_num_seqs: 256
-  # Maximum number of batched tokens per iteration (e.g., 4096, 8192)
   max_num_batched_tokens: 4096
-  # Block size for vLLM's memory manager (e.g., 16, 32, 64)
   block_size: 16
-  # Size of the CPU swap space in GiB (e.g., 4, 8, 16)
   swap_space: 4
-  # GiB of CPU memory to offload from GPU (e.g., 0, 10, 20)
   cpu_offload_gb: 0
-  # Specific model revision to use (e.g., "main", "v1.0", "a1b2c3d4", null for default)
-  revision: null
-  # Specific code revision to use (e.g., "main", "v1.0", "a1b2c3d4", null for default)
-  code_revision: null
-  # Specific tokenizer revision to use (e.g., "main", "v1.0", "a1b2c3d4", null for default)
-  tokenizer_revision: null
-  # Maximum log length to print (e.g., 512, 1024, null for unlimited)
-  max_log_len: null
-  # List of LoRA modules to load (e.g., ["user/repo-lora", "user/repo-lora2"], [] for none)
-  lora_modules: []
 
-# Benchmark Workload Configuration
-# These parameters control the workload generated for the benchmark.
 benchmark_config:
-  # API base URL for the OpenAI client. This should match the server's address.
-  api_base: "http://127.0.0.1:8000/v1"
-  # Dataset to use for prompts ("random", "sharegpt", etc.)
   dataset_name: "random"
-  # Total number of prompts to send during the test (e.g., 1000, 5000)
-  num_prompts: 20
-  # Maximum number of concurrent requests (e.g., 16, 32, 64)
-  max_concurrency: 16
-  # Target request generation rate (requests per second, "inf" for max throughput, e.g., "inf", 10.0, 50.5)
-  request_rate: "inf"
-  # Length (in tokens) of each generated input prompt (if dataset_name is "random", e.g., 512, 1024)
+  prompts_dir: "./prompts"
+  num_prompts: 200
+  warmup_prompts: 25
+  client_processes: 32
+  max_concurrency: 32
+  target_rps: "inf"   # overall target requests per second ("inf" for max)
   random_input_len: 512
-  # Desired length (in tokens) of the model's output (if dataset_name is "random", e.g., 128, 256)
   random_output_len: 128
-  # Sampling temperature for generation (e.g., 0.0 to 1.0, 0.7 is common)
   temperature: 0.7
-  # Top-p sampling parameter (e.g., 0.0 to 1.0, 0.95 is common)
   top_p: 0.95
-  # Random seed for reproducibility (e.g., 42, 123)
   seed: 42
-  # If true, generation will not stop at EOS token until max_output_len is reached (true or false)
-  ignore_eos: false
-  # Number of output sequences to return for the given prompt (e.g., 1, 3, 5)
   n: 1
-  # Number of output sequences that are generated from the prompt (e.g., 1, 3, 5)
-  best_of: 1
-  # Penalty for new tokens already in the prompt (e.g., 0.0 to 2.0, 0.0 for none)
   presence_penalty: 0.0
-  # Penalty for new tokens based on their frequency in the prompt (e.g., 0.0 to 2.0, 0.0 for none)
   frequency_penalty: 0.0
-  # Number of highest probability vocabulary tokens to keep for top-k-filtering (e.g., 10, 50, -1 for disabled)
-  top_k: -1
-  # Whether to use beam search instead of sampling (true or false)
-  use_beam_search: false
-  # A list of strings that will stop the generation (e.g., ["<|endoftext|>", "###"], [] for none)
   stop: []
-  # Whether to stream the output (true or false)
   stream: false
-  # Number of log probabilities to return (e.g., 5, 10, null for none)
   logprobs: null
+  api_base: null
+  debug: false
 
-# Output and Reporting
-# These options relate to how the benchmark results are saved and presented.
 output_config:
-  # Directory to save benchmark results (e.g., "./benchmark_results", "/tmp/my_results")
   output_dir: "./benchmark_results"
-  # Default output file name for the Nsight profiler report (without extension)
-  default_profiler_output: "benchmark/my_annotated_report"
-  # Save detailed results in JSON format (true or false)
   save_json: true
-  # Generate and save performance charts (true or false)
   save_charts: true
-  # Show statistics in the output (true or false)
   show_stats: true
+
+telemetry_config:
+  enable_gpu: true
+  enable_cpu: true
+  sample_interval_s: 1.0

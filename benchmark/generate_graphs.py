@@ -46,6 +46,7 @@ def _plot_hist(metric: dict[str, Any], out_dir: Path) -> None:
     name = metric.get("name", "histogram")
     # Friendly labels based on known metric names.
     label_map = {
+        "client:latency_seconds": ("Client latency", "seconds"),
         "vllm:request_prompt_tokens": ("Prompt tokens per request", "tokens"),
         "vllm:request_generation_tokens": ("Generation tokens per request", "tokens"),
         "vllm:time_to_first_token_seconds": ("Time to first token", "seconds"),
@@ -174,6 +175,30 @@ def _plot_throughput(data: dict[str, Any], out_dir: Path) -> None:
     plt.close()
 
 
+def _plot_throughput_over_time(per_request: list[dict[str, Any]], out_dir: Path) -> None:
+    if not per_request or not any(req.get("end_ts") for req in per_request):
+        return
+    per_request = [r for r in per_request if r.get("end_ts") is not None]
+    per_request.sort(key=lambda r: r["end_ts"])
+    start = per_request[0]["end_ts"]
+    window = 1.0
+    buckets = {}
+    for req in per_request:
+        t = req["end_ts"] - start
+        bucket = int(t // window)
+        buckets[bucket] = buckets.get(bucket, 0) + 1
+    times = [b * window for b in sorted(buckets.keys())]
+    counts = [buckets[b] for b in sorted(buckets.keys())]
+    plt.figure(figsize=(6, 3))
+    plt.plot(times, counts, marker="o", linestyle="-", linewidth=1)
+    plt.title("Requests completed per second")
+    plt.xlabel("Time since start (s)")
+    plt.ylabel("Requests/s")
+    plt.tight_layout()
+    plt.savefig(out_dir / "throughput_over_time.png")
+    plt.close()
+
+
 def _plot_latency_percentiles(data: dict[str, Any], out_dir: Path) -> None:
     prs = data.get("per_request_summary") or {}
     lat = prs.get("latency_s") or {}
@@ -196,9 +221,9 @@ def render_all(data: dict[str, Any], base_out_dir: str | Path = "./output") -> P
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     out_path = _ensure_dir(Path(base_out_dir) / timestamp)
 
-    # Histograms from engine_metrics
-    engine_metrics = data.get("engine_metrics") or []
-    for metric in engine_metrics:
+    # Histograms from engine_metrics and client_metrics
+    hist_sources = (data.get("engine_metrics") or []) + (data.get("client_metrics") or [])
+    for metric in hist_sources:
         if metric.get("type") == "histogram":
             _plot_hist(metric, out_path)
 
@@ -208,6 +233,7 @@ def render_all(data: dict[str, Any], base_out_dir: str | Path = "./output") -> P
     # Throughput + latency percentiles
     _plot_throughput(data, out_path)
     _plot_latency_percentiles(data, out_path)
+    _plot_throughput_over_time(data.get("per_request") or [], out_path)
 
     # Write summary text
     summary = _format_summary(data)
