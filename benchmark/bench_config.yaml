@@ -2,10 +2,6 @@
 # This file contains the configuration for the benchmark
 # It is used to configure the benchmark and the model
 
-# Define default model and tokenizer IDs. Change these values to easily switch the default.
-default_model_id: &default_model "Qwen/Qwen2.5-3B-Instruct"
-default_tokenizer_id: &default_tokenizer "Qwen/Qwen2.5-3B-Instruct" # Often matches the model
-
 # General Configuration
 # General settings for the benchmark tool
 general_config:
@@ -31,9 +27,9 @@ log_config:
 # and define how the model is loaded and served.
 server_config:
   # The Hugging Face model ID or path to the model (e.g., "meta-llama/Llama-2-7b-hf")
-  model: *default_model
+  model: "Qwen/Qwen2.5-3B-Instruct"
   # Tokenizer to use, often same as model (e.g., "meta-llama/Llama-2-7b-hf")
-  tokenizer: *default_tokenizer
+  tokenizer: "Qwen/Qwen2.5-3B-Instruct"
   # The name of the model to be served (e.g., "my-custom-model", null for default)
   served_model_name: null
   # Address of the running vLLM server (e.g., "http://127.0.0.1:8000")
