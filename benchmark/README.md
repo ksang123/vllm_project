@@ -6,18 +6,30 @@ A lightweight description of the benchmark harness for exercising vLLM under rea
 
 ## What This Harness Does
 
-- Benchmarks vLLM (and forks) on realistic workloads, including bursty, long-context, and mixed patterns.
-- Makes comparisons fair: identical scenarios for baseline vs optimized branches.
-- Collects telemetry that explains *why* performance shifts, not just headline tokens/sec.
+-   **Plug-and-Play vLLM Inference Tool**: This harness serves as a plug-and-play tool for benchmarking vLLM inference.
+-   **NVIDIA Nsight Systems Integration**: It leverages NVIDIA's external Nsight Systems to collect detailed performance telemetry.
+-   **Realistic Workloads**: Benchmarks vLLM (and forks) on realistic workloads, including bursty, long-context, and mixed patterns.
+-   **Automated Prompt Generation**: Generates approximately 50 random prompts for each run to simulate diverse traffic.
+-   **Model-Agnostic Benchmarking**: While models are pre-loaded within vLLM, the harness can be configured to target specific models for benchmarking.
+-   **Nsight Web API Calls**: Makes API calls to Nsight Web to retrieve and analyze performance results.
+-   **Fair Comparisons**: Ensures identical scenarios for baseline vs. optimized branches, allowing for fair comparisons.
+-   **Performance Insight**: Collects telemetry that explains *why* performance shifts, not just headline tokens/sec.
 
 ---
 
 ## How It Works
 
-- **Scenario definition**: One config file describes the model, workload mix, arrival pattern, and run durations.
-- **Runner**: Orchestrates vLLM locally or via an HTTP endpoint, drives warm-up and measurement phases, and tags each run with metadata.
-- **Telemetry**: Hooks into vLLM stats plus system metrics (GPU/CPU, memory, latency milestones) so every request is traceable.
-- **Analysis**: Converts raw logs into tables and “hockey-stick” plots for throughput and latency across concurrency levels.
+
+
+-   **Scenario Definition and Selection**: A single configuration file allows the user to define and select a scenario, which describes the target model, the mix of workloads, the request arrival pattern, and the duration of the run. This allows users to easily pick and switch between various testing conditions.
+
+-   **Runner**: Orchestrates vLLM locally or via an HTTP endpoint, drives warm-up and measurement phases, and tags each run with metadata.
+
+-   **Telemetry**: Hooks into vLLM stats plus system metrics (GPU/CPU, memory, latency milestones) so every request is traceable, leveraging Nsight Systems for deep profiling.
+
+-   **Analysis**: Converts raw logs into tables and “hockey-stick” plots for throughput and latency across concurrency levels, with data gathered via Nsight Web API calls.
+
+
 
 The parts stay modular so you can swap workloads, engines, or telemetry without rewriting the harness.
 
