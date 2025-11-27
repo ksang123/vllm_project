@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 output/
 benchmark_results/
+benchmark.log

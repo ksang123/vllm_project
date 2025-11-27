@@ -304,7 +304,8 @@ def run_vllm(prompts: list[str], config: dict[str, Any], logger, debug: bool = F
         warmup_prompts = prompts[:warmup_n]
         logger.info(f"Warmup with {len(warmup_prompts)} prompts (not measured)")
         warmup_cfg = dict(benchmark_cfg)
-        warmup_cfg["client_processes"] = 1  # keep simple for warmup
+        warmup_cfg["target_rps"] = warmup_cfg.get("target_rps", "inf")
+        warmup_cfg["client_processes"] = max(1, int(warmup_cfg.get("client_processes", 1)))
         try:
             send_requests(warmup_prompts, server_cfg, warmup_cfg, logger)
         except Exception as exc:

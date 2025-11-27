@@ -20,8 +20,8 @@ server_config:
   engine_use_ray: false
   disable_log_stats: false
   disable_log_requests: false
-  max_num_seqs: 256
-  max_num_batched_tokens: 4096
+  max_num_seqs: 512
+  max_num_batched_tokens: 8192
   block_size: 16
   swap_space: 4
   cpu_offload_gb: 0
@@ -29,8 +29,8 @@ server_config:
 benchmark_config:
   dataset_name: "random"
   prompts_dir: "./prompts"
-  num_prompts: 200
-  warmup_prompts: 25
+  num_prompts: 2000
+  warmup_prompts: 100
   client_processes: 32
   max_concurrency: 32
   target_rps: "inf"   # overall target requests per second ("inf" for max)
