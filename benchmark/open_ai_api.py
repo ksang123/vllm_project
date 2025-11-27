@@ -4,6 +4,7 @@ import string
 from openai import OpenAI
 import torch.cuda.nvtx as nvtx
 from config_handler import load_config
+from logger import logger
 
 # TODO: Implement loading datasets from Hugging Face or other sources
 PROMPTS = [
@@ -35,7 +36,7 @@ def main(args):
     nvtx.range_push("Benchmark Run")  # Start of the overall benchmark range
     for i, prompt in enumerate(prompts):
         nvtx.range_push(f"Prompt {i+1}")  # Start range for a single prompt
-        print(f"\n--- Prompt {i+1}/{len(prompts)}: '{prompt[:50]}...' ---")
+        logger.info(f"\n--- Prompt {i+1}/{len(prompts)}: '{prompt[:50]}...' ---")
         
         # Filter out None values from args before passing to create
         completion_args = {
@@ -58,18 +59,22 @@ def main(args):
         
         filtered_args = {k: v for k, v in completion_args.items() if v is not None}
 
-        completion = client.completions.create(**filtered_args)
+        try:
+            completion = client.completions.create(**filtered_args)
 
-        print("\n=== Completion ===")
-        for choice in completion.choices:
-            print(f"[choice {choice.index}] finish={choice.finish_reason}")
-            print(choice.text.strip(), "\n")
+            logger.info("\n=== Completion ===")
+            for choice in completion.choices:
+                logger.info(f"[choice {choice.index}] finish={choice.finish_reason}")
+                logger.info(choice.text.strip() + "\n")
 
-        if completion.usage:
-            print(
-                f"Tokens — prompt: {completion.usage.prompt_tokens}, "
-                f"completion: {completion.usage.completion_tokens}, "
-                f"total: {completion.usage.total_tokens}")
+            if completion.usage:
+                logger.info(
+                    f"Tokens — prompt: {completion.usage.prompt_tokens}, "
+                    f"completion: {completion.usage.completion_tokens}, "
+                    f"total: {completion.usage.total_tokens}")
+        except Exception as e:
+            logger.error(f"An error occurred during API call: {e}")
+
         nvtx.range_pop()  # End range for a single prompt
     nvtx.range_pop()  # End of the overall benchmark range
 
@@ -110,7 +115,7 @@ if __name__ == "__main__":
             args.model = config['server_config']['model']
         else:
             # Fallback if config is not available or model is not specified
-            print("Warning: --model argument not provided and could not determine from config. Using a default model.")
+            logger.warning(" --model argument not provided and could not determine from config. Using a default model.")
             args.model = "meta-llama/Llama-2-7b-hf"
             
     main(args)

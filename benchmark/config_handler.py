@@ -1,4 +1,5 @@
 import yaml
+from logger import logger
 
 def load_config(config_path="bench_config.yaml"):
     """Loads the benchmark configuration from a YAML file.
@@ -11,10 +12,11 @@ def load_config(config_path="bench_config.yaml"):
     """
     try:
         with open(config_path, "r") as f:
+            logger.info(f"Loading configuration from '{config_path}'")
             return yaml.safe_load(f)
     except FileNotFoundError:
-        print(f"Error: Configuration file not found at '{config_path}'")
+        logger.error(f"Configuration file not found at '{config_path}'")
         return None
     except yaml.YAMLError as e:
-        print(f"Error parsing YAML file: {e}")
+        logger.error(f"Error parsing YAML file: {e}")
         return None

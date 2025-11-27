@@ -3,6 +3,7 @@ import sys
 import argparse
 import os
 from config_handler import load_config
+from logger import logger
 
 # A list of common models for user convenience
 SUPPORTED_MODELS = [
@@ -15,12 +16,12 @@ SUPPORTED_MODELS = [
 
 def display_menu():
     """Prints the model selection menu."""
-    print("\n--- vLLM Server Launcher ---")
-    print("Please choose a model to serve:")
+    logger.info("\n--- vLLM Server Launcher ---")
+    logger.info("Please choose a model to serve:")
     for i, model in enumerate(SUPPORTED_MODELS):
-        print(f"  {i + 1}. {model}")
-    print(f"  {len(SUPPORTED_MODELS) + 1}. Enter a custom HuggingFace model name")
-    print("  0. Exit")
+        logger.info(f"  {i + 1}. {model}")
+    logger.info(f"  {len(SUPPORTED_MODELS) + 1}. Enter a custom HuggingFace model name")
+    logger.info("  0. Exit")
 
 
 def get_model_choice():
@@ -41,17 +42,17 @@ def get_model_choice():
                     if custom_model:
                         return custom_model
                     else:
-                        print("Error: Custom model name cannot be empty.")
+                        logger.error("Custom model name cannot be empty.")
                         continue
                 return SUPPORTED_MODELS[choice - 1]
             else:
-                print(
+                logger.error(
                     f"Invalid choice. Please enter a number between 0 and {len(SUPPORTED_MODELS) + 1}."
                 )
         except ValueError:
-            print("Invalid input. Please enter a number.")
+            logger.error("Invalid input. Please enter a number.")
         except IndexError:
-            print("Invalid choice. Please select a valid option from the menu.")
+            logger.error("Invalid choice. Please select a valid option from the menu.")
 
 
 def build_command_from_config(config, additional_args):
@@ -104,27 +105,24 @@ def run_server(config, additional_args):
         "vllm.entrypoints.openai.api_server",
     ] + server_command_args
 
-    print("\n🚀 Starting vLLM server with the following command:")
+    logger.info("\n🚀 Starting vLLM server with the following command:")
     # Format for readability
-    print("  " + " ".join(command))
-    print("\nTo stop the server, press Ctrl+C in this terminal.")
+    logger.info("  " + " ".join(command))
+    logger.info("\nTo stop the server, press Ctrl+C in this terminal.")
 
     try:
         subprocess.run(command, check=True)
     except subprocess.CalledProcessError as e:
-        print(f"\n❌ Error starting the server: {e}", file=sys.stderr)
-        print(
-            "Please ensure you have installed the required packages (pip install vllm)",
-            file=sys.stderr)
+        logger.error(f"\n❌ Error starting the server: {e}")
+        logger.error(
+            "Please ensure you have installed the required packages (pip install vllm)")
     except KeyboardInterrupt:
-        print("\n🛑 Server stopped by user.")
+        logger.warning("\n🛑 Server stopped by user.")
     except FileNotFoundError:
-        print(
-            f"\n❌ Error: '{sys.executable} -m vllm.entrypoints.openai.api_server' not found.",
-            file=sys.stderr)
-        print(
-            "Please ensure you are in the correct environment and have vLLM installed.",
-            file=sys.stderr)
+        logger.error(
+            f"\n❌ Error: '{sys.executable} -m vllm.entrypoints.openai.api_server' not found.")
+        logger.error(
+            "Please ensure you are in the correct environment and have vLLM installed.")
 
 
 def run_profiler(config, profile_args, additional_args):
@@ -144,22 +142,22 @@ def run_profiler(config, profile_args, additional_args):
 
     command = nsys_command + benchmark_command
 
-    print("\n🕵️  Running Nsight profiler with the following command:")
-    print("  " + " ".join(command))
+    logger.info("\n🕵️  Running Nsight profiler with the following command:")
+    logger.info("  " + " ".join(command))
 
     try:
         subprocess.run(command, check=True)
-        print(f"\n✅ Profiling complete. Report saved to '{profile_args.output}.nsys-rep'")
+        logger.info(f"\n✅ Profiling complete. Report saved to '{profile_args.output}.nsys-rep'")
     except subprocess.CalledProcessError as e:
-        print(f"\n❌ Error during profiling: {e}", file=sys.stderr)
+        logger.error(f"\n❌ Error during profiling: {e}")
     except FileNotFoundError:
-        print("\n❌ Error: 'nsys' command not found.", file=sys.stderr)
-        print("Please ensure NVIDIA Nsight Systems is installed and in your system's PATH.", file=sys.stderr)
+        logger.error("\n❌ Error: 'nsys' command not found.")
+        logger.error("Please ensure NVIDIA Nsight Systems is installed and in your system's PATH.")
 
 
 def main():
     """
-    Main function to parse arguments and launch the vLLM server or profiler.
+    Main function to parse arguments and and launch the vLLM server or profiler.
     """
     parser = argparse.ArgumentParser(
         description=
