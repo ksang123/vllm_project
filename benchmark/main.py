@@ -2,40 +2,34 @@ import subprocess
 import sys
 import argparse
 import os
+import logging
 from config_handler import load_config
-from logger import logger
+from logger import setup_logger
 
-# A list of common models for user convenience
-SUPPORTED_MODELS = [
-    "Qwen/Qwen2.5-3B-Instruct",
-    "meta-llama/Llama-2-7b-chat-hf",
-    "mistralai/Mistral-7B-Instruct-v0.1",
-    "google/gemma-2b-it",
-]
-
-
-def display_menu():
+def display_menu(supported_models):
     """Prints the model selection menu."""
+    logger = logging.getLogger("vllm_benchmark")
     logger.info("\n--- vLLM Server Launcher ---")
     logger.info("Please choose a model to serve:")
-    for i, model in enumerate(SUPPORTED_MODELS):
+    for i, model in enumerate(supported_models):
         logger.info(f"  {i + 1}. {model}")
-    logger.info(f"  {len(SUPPORTED_MODELS) + 1}. Enter a custom HuggingFace model name")
+    logger.info(f"  {len(supported_models) + 1}. Enter a custom HuggingFace model name")
     logger.info("  0. Exit")
 
 
-def get_model_choice():
+def get_model_choice(supported_models):
     """Gets the user's model choice from the menu."""
+    logger = logging.getLogger("vllm_benchmark")
     while True:
         try:
             choice = input(
-                f"\nEnter your choice (0-{len(SUPPORTED_MODELS) + 1}): ")
+                f"\nEnter your choice (0-{len(supported_models) + 1}): ")
             choice = int(choice)
 
-            if 0 <= choice <= len(SUPPORTED_MODELS) + 1:
+            if 0 <= choice <= len(supported_models) + 1:
                 if choice == 0:
                     return None
-                if choice == len(SUPPORTED_MODELS) + 1:
+                if choice == len(supported_models) + 1:
                     custom_model = input(
                         "Enter the custom HuggingFace model name (e.g., 'user/model'): "
                     )
@@ -44,10 +38,10 @@ def get_model_choice():
                     else:
                         logger.error("Custom model name cannot be empty.")
                         continue
-                return SUPPORTED_MODELS[choice - 1]
+                return supported_models[choice - 1]
             else:
                 logger.error(
-                    f"Invalid choice. Please enter a number between 0 and {len(SUPPORTED_MODELS) + 1}."
+                    f"Invalid choice. Please enter a number between 0 and {len(supported_models) + 1}."
                 )
         except ValueError:
             logger.error("Invalid input. Please enter a number.")
@@ -96,6 +90,7 @@ def build_command_from_config(config, additional_args):
 
 def run_server(config, additional_args):
     """Constructs and runs the vLLM server command."""
+    logger = logging.getLogger("vllm_benchmark")
     server_command_args = build_command_from_config(
         config.get("server_config", {}), additional_args
     )
@@ -127,6 +122,7 @@ def run_server(config, additional_args):
 
 def run_profiler(config, profile_args, additional_args):
     """Constructs and runs the nsys profiler command."""
+    logger = logging.getLogger("vllm_benchmark")
     nsys_command = [
         "nsys", "profile", "-t", "cuda,nvtx,osrt", "--force-overwrite", "true", "-o",
         profile_args.output
@@ -159,6 +155,15 @@ def main():
     """
     Main function to parse arguments and and launch the vLLM server or profiler.
     """
+    # Load configuration first to get logger and other settings
+    config = load_config()
+    if not config:
+        sys.exit(1)
+
+    # Setup logger
+    log_config = config.get("log_config", {})
+    logger = setup_logger(log_config.get("log_file", "benchmark.log"))
+
     parser = argparse.ArgumentParser(
         description=
         "A plug-and-play script to launch the vLLM server or Nsight profiler."
@@ -179,11 +184,13 @@ def main():
         action='store_true',
         help="Enable profiler mode to run the benchmark with Nsight Systems."
     )
+    
+    output_config = config.get("output_config", {})
     profile_group.add_argument(
         "--profile-output",
         type=str,
         dest='output',
-        default="benchmark/my_annotated_report",
+        default=output_config.get("default_profiler_output", "benchmark/my_annotated_report"),
         help="Output file name for the Nsight report (without extension)."
     )
 
@@ -196,20 +203,17 @@ def main():
 
     args = parser.parse_args()
 
-    # Load configuration
-    config = load_config()
-    if not config:
-        sys.exit(1)
-
     if args.profile:
         run_profiler(config, args, args.additional_args)
     else:
-        # Handle model override
+        # Handle model override from CLI or menu
         model_name = args.model
+        general_config = config.get("general_config", {})
+        supported_models = general_config.get("supported_models", [])
+        
         if not model_name:
-            # only show menu if model is not passed via CLI
-            display_menu()
-            model_name = get_model_choice()
+            display_menu(supported_models)
+            model_name = get_model_choice(supported_models)
             if model_name is None:
                 sys.exit(0) # User chose to exit
 

@@ -2,18 +2,44 @@
 # This file contains the configuration for the benchmark
 # It is used to configure the benchmark and the model
 
+# Define default model and tokenizer IDs. Change these values to easily switch the default.
+default_model_id: &default_model "Qwen/Qwen2.5-3B-Instruct"
+default_tokenizer_id: &default_tokenizer "Qwen/Qwen2.5-3B-Instruct" # Often matches the model
+
+# General Configuration
+# General settings for the benchmark tool
+general_config:
+  # List of models to display in the interactive menu
+  supported_models:
+    - "Qwen/Qwen2.5-3B-Instruct"
+    - "meta-llama/Llama-2-7b-chat-hf"
+    - "mistralai/Mistral-7B-Instruct-v0.1"
+    - "google/gemma-2b-it"
+    - "stabilityai/stablelm-tuned-alpha-3b"
+    - "bigscience/bloom-560m"
+    - "HuggingFaceH4/zephyr-7b-beta"
+    - "openlm-research/open_llama_3b"
+    - "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+
+# Logging Configuration
+log_config:
+  # The file to write logs to
+  log_file: "benchmark.log"
+
 # Server Configuration (for vllm serve)
 # These parameters are typically used when launching the VLLM server (vllm serve command)
 # and define how the model is loaded and served.
 server_config:
   # The Hugging Face model ID or path to the model (e.g., "meta-llama/Llama-2-7b-hf")
-  model: "meta-llama/Llama-2-7b-hf"
+  model: *default_model
   # Tokenizer to use, often same as model (e.g., "meta-llama/Llama-2-7b-hf")
-  tokenizer: "meta-llama/Llama-2-7b-hf"
+  tokenizer: *default_tokenizer
   # The name of the model to be served (e.g., "my-custom-model", null for default)
   served_model_name: null
   # Address of the running vLLM server (e.g., "http://127.0.0.1:8000")
   base_url: "http://127.0.0.1:8000"
+  # API key for the vLLM server (e.g., "EMPTY", "vllm-rocks")
+  api_key: "EMPTY"
   # Host address to bind the server to (e.g., "127.0.0.1", "0.0.0.0" for all interfaces)
   host: "127.0.0.1"
   # Port the vLLM server is listening on (e.g., 8000)
@@ -66,7 +92,9 @@ server_config:
 # Benchmark Workload Configuration
 # These parameters control the workload generated for the benchmark.
 benchmark_config:
-  # Dataset to use for prompts ("random", "ShareGPT", "UserDefinedDataset", etc.)
+  # API base URL for the OpenAI client. This should match the server's address.
+  api_base: "http://127.0.0.1:8000/v1"
+  # Dataset to use for prompts ("random", "sharegpt", etc.)
   dataset_name: "random"
   # Total number of prompts to send during the test (e.g., 1000, 5000)
   num_prompts: 1000
@@ -110,6 +138,8 @@ benchmark_config:
 output_config:
   # Directory to save benchmark results (e.g., "./benchmark_results", "/tmp/my_results")
   output_dir: "./benchmark_results"
+  # Default output file name for the Nsight profiler report (without extension)
+  default_profiler_output: "benchmark/my_annotated_report"
   # Save detailed results in JSON format (true or false)
   save_json: true
   # Generate and save performance charts (true or false)

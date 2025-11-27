@@ -1,9 +1,12 @@
 import logging
 import sys
 
-def setup_logger():
+def setup_logger(log_file: str):
     """Sets up the benchmark logger.
 
+    Args:
+        log_file (str): The path to the log file.
+        
     Returns:
         logging.Logger: A configured logger instance.
     """
@@ -20,7 +23,7 @@ def setup_logger():
 
     # --- File Handler ---
     # Logs all levels (INFO, WARNING, ERROR) to a file
-    file_handler = logging.FileHandler("benchmark.log")
+    file_handler = logging.FileHandler(log_file)
     file_handler.setLevel(logging.INFO)
     file_formatter = logging.Formatter(
         "%(asctime)s - %(levelname)s - %(message)s"
@@ -48,5 +51,8 @@ def setup_logger():
     
     return logger
 
-# Create a logger instance for other modules to import
-logger = setup_logger()
+# The logger will be initialized in main.py
+# and can be imported from there by other modules.
+# For modules that need a logger instance, they can do:
+# import logging
+# logger = logging.getLogger("vllm_benchmark")

@@ -1,37 +1,26 @@
 import argparse
-import random
-import string
+import logging
 from openai import OpenAI
 import torch.cuda.nvtx as nvtx
 from config_handler import load_config
-from logger import logger
-
-# TODO: Implement loading datasets from Hugging Face or other sources
-PROMPTS = [
-    "Hello, I'm a language model,",
-    "The capital of France is",
-    "The future of AI is",
-    "San Francisco is a",
-    "Python is a popular programming language for",
-    "The quick brown fox jumps over the lazy dog",
-]
-
-
-def generate_random_prompt(length):
-    """Generates a random prompt of a given length."""
-    return "".join(random.choices(string.ascii_letters + string.digits + " ", k=length))
-
+from prompt_generator import get_prompts
 
 def main(args):
+    logger = logging.getLogger("vllm_benchmark")
     # Point the OpenAI client at the local vLLM server.
-    client = OpenAI(api_key="EMPTY", base_url=args.api_base)
+    client = OpenAI(api_key=args.api_key, base_url=args.api_base)
 
-    if args.dataset_name == "random":
-        prompts = [generate_random_prompt(args.random_input_len) for _ in range(args.num_prompts)]
-    else:
-        # For now, just use the hardcoded prompts for other dataset names
-        prompts = random.choices(PROMPTS, k=args.num_prompts)
+    # Get prompts from the generator
+    prompts = get_prompts(
+        dataset_name=args.dataset_name,
+        num_prompts=args.num_prompts,
+        prompt_len=args.random_input_len,
+        seed=args.seed
+    )
 
+    if not prompts:
+        logger.error(f"Could not generate prompts for dataset '{args.dataset_name}'. Please check the dataset name and prompt generator implementation.")
+        return
 
     nvtx.range_push("Benchmark Run")  # Start of the overall benchmark range
     for i, prompt in enumerate(prompts):
@@ -84,38 +73,52 @@ if __name__ == "__main__":
         description="A simple script to benchmark a vLLM server based on a config file.")
 
     # Arguments from benchmark_config
-    parser.add_argument("--api-base", type=str, default="http://localhost:8000/v1", help="API base URL for the vLLM server.")
+    parser.add_argument("--api-base", type=str, help="API base URL for the vLLM server.")
+    parser.add_argument("--api-key", type=str, help="API key for the vLLM server.")
     parser.add_argument("--model", type=str, default=None, help="The model to use for the benchmark.")
-    parser.add_argument("--dataset-name", type=str, default="random", help='Dataset to use ("random", "ShareGPT", etc.)')
-    parser.add_argument("--num-prompts", type=int, default=10, help="Total number of prompts to send during the test")
-    parser.add_argument("--max-concurrency", type=int, default=16, help="Maximum number of concurrent requests")
-    parser.add_argument("--request-rate", type=str, default="inf", help='Target request generation rate (requests per second, "inf" for max throughput)')
-    parser.add_argument("--random-input-len", type=int, default=512, help="Length (in tokens) of each generated input prompt (if dataset_name is 'random')")
-    parser.add_argument("--random-output-len", type=int, default=128, help="Desired length (in tokens) of the model's output (if dataset_name is 'random')")
-    parser.add_argument("--temperature", type=float, default=0.7, help="Sampling temperature for generation")
-    parser.add_argument("--top-p", type=float, default=0.95, help="Top-p sampling parameter")
-    parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility")
+    parser.add_argument("--dataset-name", type=str, help='Dataset to use ("random", "sharegpt", etc.)')
+    parser.add_argument("--num-prompts", type=int, help="Total number of prompts to send during the test")
+    parser.add_argument("--max-concurrency", type=int, help="Maximum number of concurrent requests")
+    parser.add_argument("--request-rate", type=str, help='Target request generation rate (requests per second, "inf" for max throughput)')
+    parser.add_argument("--random-input-len", type=int, help="Length (in tokens) of each generated input prompt (if dataset_name is 'random')")
+    parser.add_argument("--random-output-len", type=int, help="Desired length (in tokens) of the model's output (if dataset_name is 'random')")
+    parser.add_argument("--temperature", type=float, help="Sampling temperature for generation")
+    parser.add_argument("--top-p", type=float, help="Top-p sampling parameter")
+    parser.add_argument("--seed", type=int, help="Random seed for reproducibility")
     parser.add_argument("--ignore-eos", action="store_true", help="If true, generation will not stop at EOS token until max_output_len is reached")
-    parser.add_argument("--n", type=int, default=1, help="Number of output sequences to return for the given prompt")
-    parser.add_argument("--best-of", type=int, default=1, help="Number of output sequences that are generated from the prompt")
-    parser.add_argument("--presence-penalty", type=float, default=0.0, help="Penalty for new tokens already in the prompt")
-    parser.add_argument("--frequency-penalty", type=float, default=0.0, help="Penalty for new tokens based on their frequency in the prompt")
-    parser.add_argument("--top-k", type=int, default=-1, help="Number of highest probability vocabulary tokens to keep for top-k-filtering")
+    parser.add_argument("--n", type=int, help="Number of output sequences to return for the given prompt")
+    parser.add_argument("--best-of", type=int, help="Number of output sequences that are generated from the prompt")
+    parser.add_argument("--presence-penalty", type=float, help="Penalty for new tokens already in the prompt")
+    parser.add_argument("--frequency-penalty", type=float, help="Penalty for new tokens based on their frequency in the prompt")
+    parser.add_argument("--top-k", type=int, help="Number of highest probability vocabulary tokens to keep for top-k-filtering")
     parser.add_argument("--use-beam-search", action="store_true", help="Whether to use beam search instead of sampling")
     parser.add_argument("--stop", nargs='*', help="A list of strings that will stop the generation")
     parser.add_argument("--stream", action="store_true", help="Whether to stream the output")
-    parser.add_argument("--logprobs", type=int, default=None, help="Number of log probabilities to return")
+    parser.add_argument("--logprobs", type=int, help="Number of log probabilities to return")
 
     args = parser.parse_args()
     
-    # Set model from server_config if not provided
+    # Load config to get default values if they are not provided in args
+    config = load_config()
+    
     if args.model is None:
-        config = load_config()
         if config and 'server_config' in config and 'model' in config['server_config']:
             args.model = config['server_config']['model']
         else:
             # Fallback if config is not available or model is not specified
-            logger.warning(" --model argument not provided and could not determine from config. Using a default model.")
+            logging.getLogger("vllm_benchmark").warning(" --model argument not provided and could not determine from config. Using a default model.")
             args.model = "meta-llama/Llama-2-7b-hf"
+
+    if args.api_base is None:
+        if config and 'benchmark_config' in config and 'api_base' in config['benchmark_config']:
+            args.api_base = config['benchmark_config']['api_base']
+        else:
+            args.api_base = "http://localhost:8000/v1"
+
+    if args.api_key is None:
+        if config and 'server_config' in config and 'api_key' in config['server_config']:
+            args.api_key = config['server_config']['api_key']
+        else:
+            args.api_key = "EMPTY"
             
     main(args)
