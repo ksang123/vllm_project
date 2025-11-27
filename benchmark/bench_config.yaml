@@ -2,21 +2,6 @@
 # This file contains the configuration for the benchmark
 # It is used to configure the benchmark and the model
 
-# General Configuration
-# General settings for the benchmark tool
-general_config:
-  # List of models to display in the interactive menu
-  supported_models:
-    - "Qwen/Qwen2.5-3B-Instruct"
-    - "meta-llama/Llama-2-7b-chat-hf"
-    - "mistralai/Mistral-7B-Instruct-v0.1"
-    - "google/gemma-2b-it"
-    - "stabilityai/stablelm-tuned-alpha-3b"
-    - "bigscience/bloom-560m"
-    - "HuggingFaceH4/zephyr-7b-beta"
-    - "openlm-research/open_llama_3b"
-    - "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-
 # Logging Configuration
 log_config:
   # The file to write logs to
@@ -93,7 +78,7 @@ benchmark_config:
   # Dataset to use for prompts ("random", "sharegpt", etc.)
   dataset_name: "random"
   # Total number of prompts to send during the test (e.g., 1000, 5000)
-  num_prompts: 1000
+  num_prompts: 20
   # Maximum number of concurrent requests (e.g., 16, 32, 64)
   max_concurrency: 16
   # Target request generation rate (requests per second, "inf" for max throughput, e.g., "inf", 10.0, 50.5)

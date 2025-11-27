@@ -1,226 +1,50 @@
-import subprocess
-import sys
+from __future__ import annotations
+
 import argparse
-import os
+import json
 import logging
+from pathlib import Path
+
 from config_handler import load_config
 from logger import setup_logger
-
-def display_menu(supported_models):
-    """Prints the model selection menu."""
-    logger = logging.getLogger("vllm_benchmark")
-    logger.info("\n--- vLLM Server Launcher ---")
-    logger.info("Please choose a model to serve:")
-    for i, model in enumerate(supported_models):
-        logger.info(f"  {i + 1}. {model}")
-    logger.info(f"  {len(supported_models) + 1}. Enter a custom HuggingFace model name")
-    logger.info("  0. Exit")
-
-
-def get_model_choice(supported_models):
-    """Gets the user's model choice from the menu."""
-    logger = logging.getLogger("vllm_benchmark")
-    while True:
-        try:
-            choice = input(
-                f"\nEnter your choice (0-{len(supported_models) + 1}): ")
-            choice = int(choice)
-
-            if 0 <= choice <= len(supported_models) + 1:
-                if choice == 0:
-                    return None
-                if choice == len(supported_models) + 1:
-                    custom_model = input(
-                        "Enter the custom HuggingFace model name (e.g., 'user/model'): "
-                    )
-                    if custom_model:
-                        return custom_model
-                    else:
-                        logger.error("Custom model name cannot be empty.")
-                        continue
-                return supported_models[choice - 1]
-            else:
-                logger.error(
-                    f"Invalid choice. Please enter a number between 0 and {len(supported_models) + 1}."
-                )
-        except ValueError:
-            logger.error("Invalid input. Please enter a number.")
-        except IndexError:
-            logger.error("Invalid choice. Please select a valid option from the menu.")
-
-
-def build_command_from_config(config, additional_args):
-    """Builds a command list from a configuration dictionary."""
-    command = []
-    for key, value in config.items():
-        if value is not None:
-            # Convert key to a command-line argument
-            arg = f"--{key.replace('_', '-')}"
-            if isinstance(value, bool):
-                if value:
-                    command.append(arg)
-            elif isinstance(value, list):
-                for item in value:
-                    command.extend([arg, str(item)])
-            else:
-                command.extend([arg, str(value)])
-
-    # Override with additional args
-    if additional_args:
-        # The vllm entrypoint script doesn't like the '--' separator
-        if additional_args and additional_args[0] == '--':
-            additional_args.pop(0)
-
-        # Simple override: if an arg is in additional_args, it replaces the config value
-        # This is a simplification. A more robust solution would parse additional_args properly.
-        for i, arg in enumerate(additional_args):
-            if arg.startswith('--'):
-                arg_name = arg[2:].replace('-', '_')
-                # remove existing from command
-                for j, cmd_arg in enumerate(command):
-                    if cmd_arg == arg:
-                        # remove argument and its value
-                        command.pop(j)
-                        command.pop(j)
-                        break
-        command.extend(additional_args)
-
-    return command
-
-
-def run_server(config, additional_args):
-    """Constructs and runs the vLLM server command."""
-    logger = logging.getLogger("vllm_benchmark")
-    server_command_args = build_command_from_config(
-        config.get("server_config", {}), additional_args
-    )
-    command = [
-        sys.executable,  # Use the same python interpreter
-        "-m",
-        "vllm.entrypoints.openai.api_server",
-    ] + server_command_args
-
-    logger.info("\n🚀 Starting vLLM server with the following command:")
-    # Format for readability
-    logger.info("  " + " ".join(command))
-    logger.info("\nTo stop the server, press Ctrl+C in this terminal.")
-
-    try:
-        subprocess.run(command, check=True)
-    except subprocess.CalledProcessError as e:
-        logger.error(f"\n❌ Error starting the server: {e}")
-        logger.error(
-            "Please ensure you have installed the required packages (pip install vllm)")
-    except KeyboardInterrupt:
-        logger.warning("\n🛑 Server stopped by user.")
-    except FileNotFoundError:
-        logger.error(
-            f"\n❌ Error: '{sys.executable} -m vllm.entrypoints.openai.api_server' not found.")
-        logger.error(
-            "Please ensure you are in the correct environment and have vLLM installed.")
-
-
-def run_profiler(config, profile_args, additional_args):
-    """Constructs and runs the nsys profiler command."""
-    logger = logging.getLogger("vllm_benchmark")
-    nsys_command = [
-        "nsys", "profile", "-t", "cuda,nvtx,osrt", "--force-overwrite", "true", "-o",
-        profile_args.output
-    ]
-
-    benchmark_command_args = build_command_from_config(
-        config.get("benchmark_config", {}), additional_args
-    )
-    benchmark_command = [
-        sys.executable,  # Use the project's python interpreter
-        "open_ai_api.py"
-    ] + benchmark_command_args
-
-    command = nsys_command + benchmark_command
-
-    logger.info("\n🕵️  Running Nsight profiler with the following command:")
-    logger.info("  " + " ".join(command))
-
-    try:
-        subprocess.run(command, check=True)
-        logger.info(f"\n✅ Profiling complete. Report saved to '{profile_args.output}.nsys-rep'")
-    except subprocess.CalledProcessError as e:
-        logger.error(f"\n❌ Error during profiling: {e}")
-    except FileNotFoundError:
-        logger.error("\n❌ Error: 'nsys' command not found.")
-        logger.error("Please ensure NVIDIA Nsight Systems is installed and in your system's PATH.")
+from prompt_generator import get_prompts
+from vllm_runner import run_vllm, dump_results
 
 
 def main():
-    """
-    Main function to parse arguments and and launch the vLLM server or profiler.
-    """
-    # Load configuration first to get logger and other settings
-    config = load_config()
-    if not config:
-        sys.exit(1)
-
-    # Setup logger
-    log_config = config.get("log_config", {})
-    logger = setup_logger(log_config.get("log_file", "benchmark.log"))
-
-    parser = argparse.ArgumentParser(
-        description=
-        "A plug-and-play script to launch the vLLM server or Nsight profiler."
-    )
-    
-    # Server mode arguments
-    server_group = parser.add_argument_group('Server Mode (Default)')
-    server_group.add_argument(
-        "--model",
-        type=str,
-        help=
-        "Directly specify the model to serve, overriding the config file.")
-    
-    # Profiler mode arguments
-    profile_group = parser.add_argument_group('Profiler Mode')
-    profile_group.add_argument(
-        "--profile",
-        action='store_true',
-        help="Enable profiler mode to run the benchmark with Nsight Systems."
-    )
-    
-    output_config = config.get("output_config", {})
-    profile_group.add_argument(
-        "--profile-output",
-        type=str,
-        dest='output',
-        default=output_config.get("default_profiler_output", "benchmark/my_annotated_report"),
-        help="Output file name for the Nsight report (without extension)."
-    )
-
-    parser.add_argument(
-        'additional_args',
-        nargs=argparse.REMAINDER,
-        help=
-        "Additional arguments to pass to the server or the benchmark script (e.g., --num-prompts 50)."
-    )
-
+    parser = argparse.ArgumentParser(description="Run vLLM benchmark.")
+    parser.add_argument("--config", default="bench_config.yaml", help="Path to bench_config.yaml")
+    parser.add_argument("--debug", action="store_true", help="Include generated texts/config in output")
     args = parser.parse_args()
 
-    if args.profile:
-        run_profiler(config, args, args.additional_args)
-    else:
-        # Handle model override from CLI or menu
-        model_name = args.model
-        general_config = config.get("general_config", {})
-        supported_models = general_config.get("supported_models", [])
-        
-        if not model_name:
-            display_menu(supported_models)
-            model_name = get_model_choice(supported_models)
-            if model_name is None:
-                sys.exit(0) # User chose to exit
+    config = load_config(args.config)
+    if not config:
+        raise SystemExit("Failed to load configuration.")
 
-        if model_name:
-            config['server_config']['model'] = model_name
+    log_file = config.get("log_config", {}).get("log_file", "benchmark.log")
+    setup_logger(log_file)
+    logger = logging.getLogger("vllm_benchmark")
 
-        run_server(config, args.additional_args)
+    benchmark_cfg = config.get("benchmark_config", {})
+    num_prompts = benchmark_cfg.get("num_prompts", 4)
+    dataset_name = benchmark_cfg.get("dataset_name", "random")
+    random_input_len = benchmark_cfg.get("random_input_len", 512)
+    seed = benchmark_cfg.get("seed", 42)
+
+    logger.info("Generating prompts...")
+    prompts = get_prompts(dataset_name, num_prompts, prompt_len=random_input_len, seed=seed)
+
+    results = run_vllm(prompts, config, logger, debug=args.debug)
+
+    output_cfg = config.get("output_config", {})
+    if output_cfg.get("save_json", True):
+        out_dir = Path(output_cfg.get("output_dir", "./output"))
+        out_dir.mkdir(parents=True, exist_ok=True)
+        dump_results(results, out_dir / "results.json", logger)
+
+    if output_cfg.get("show_stats", True):
+        logger.info("\n--- Benchmark Results ---")
+        logger.info(json.dumps(results, indent=2))
 
 
 if __name__ == "__main__":

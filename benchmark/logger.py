@@ -56,3 +56,6 @@ def setup_logger(log_file: str):
 # For modules that need a logger instance, they can do:
 # import logging
 # logger = logging.getLogger("vllm_benchmark")
+
+# Convenience default logger reference (set after setup_logger is called).
+logger = logging.getLogger("vllm_benchmark")

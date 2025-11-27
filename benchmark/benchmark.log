@@ -1,0 +1,611 @@
+2025-11-27 19:25:04,820 - INFO - Generating prompts...
+2025-11-27 19:25:04,845 - INFO - Starting vLLM server on 127.0.0.1:8000
+2025-11-27 19:25:04,846 - INFO - Starting vLLM server: /home/etai.z/miniconda3/envs/vllm/bin/python3 -m vllm.entrypoints.openai.api_server --host 127.0.0.1 --port 8000 --model Qwen/Qwen2.5-3B-Instruct --tokenizer Qwen/Qwen2.5-3B-Instruct --max-model-len 2048 --gpu-memory-utilization 0.9 --dtype auto --tensor-parallel-size 1 --enable-prefix-caching --tokenizer-mode auto --max-num-seqs 256 --max-num-batched-tokens 4096 --block-size 16 --swap-space 4 --cpu-offload-gb 0
+2025-11-27 19:25:52,940 - INFO - Sending 1000 prompts to http://127.0.0.1:8000
+2025-11-27 19:27:07,303 - INFO - Generating prompts...
+2025-11-27 19:27:07,303 - INFO - Starting vLLM server on 127.0.0.1:8000
+2025-11-27 19:27:07,304 - INFO - Starting vLLM server: /home/etai.z/miniconda3/envs/vllm/bin/python3 -m vllm.entrypoints.openai.api_server --host 127.0.0.1 --port 8000 --model Qwen/Qwen2.5-3B-Instruct --tokenizer Qwen/Qwen2.5-3B-Instruct --max-model-len 2048 --gpu-memory-utilization 0.9 --dtype auto --tensor-parallel-size 1 --enable-prefix-caching --tokenizer-mode auto --max-num-seqs 256 --max-num-batched-tokens 4096 --block-size 16 --swap-space 4 --cpu-offload-gb 0
+2025-11-27 19:27:53,393 - INFO - Sending 20 prompts to http://127.0.0.1:8000
+2025-11-27 19:28:17,855 - INFO - Wrote results to benchmark_results/results.json
+2025-11-27 19:28:17,856 - INFO - 
+--- Benchmark Results ---
+2025-11-27 19:28:17,856 - INFO - {
+  "model": "Qwen/Qwen2.5-3B-Instruct",
+  "num_prompts": 20,
+  "total_run_time_s": 21.561198234558105,
+  "total_prompt_tokens": 8080,
+  "total_output_tokens": 2123,
+  "total_tokens": 10203,
+  "throughput_prompts_per_s": 0.9275922322324448,
+  "throughput_output_tokens_per_s": 98.46391545147401,
+  "throughput_total_tokens_per_s": 473.2111772733817,
+  "per_request": [
+    {
+      "latency_s": 2.7972989082336426,
+      "usage": {
+        "prompt_tokens": 398,
+        "completion_tokens": 95
+      }
+    },
+    {
+      "latency_s": 0.7570474147796631,
+      "usage": {
+        "prompt_tokens": 409,
+        "completion_tokens": 81
+      }
+    },
+    {
+      "latency_s": 1.1784188747406006,
+      "usage": {
+        "prompt_tokens": 400,
+        "completion_tokens": 128
+      }
+    },
+    {
+      "latency_s": 0.8449223041534424,
+      "usage": {
+        "prompt_tokens": 403,
+        "completion_tokens": 91
+      }
+    },
+    {
+      "latency_s": 0.9790408611297607,
+      "usage": {
+        "prompt_tokens": 400,
+        "completion_tokens": 106
+      }
+    },
+    {
+      "latency_s": 1.0092973709106445,
+      "usage": {
+        "prompt_tokens": 410,
+        "completion_tokens": 109
+      }
+    },
+    {
+      "latency_s": 1.0016839504241943,
+      "usage": {
+        "prompt_tokens": 411,
+        "completion_tokens": 108
+      }
+    },
+    {
+      "latency_s": 1.178898572921753,
+      "usage": {
+        "prompt_tokens": 400,
+        "completion_tokens": 128
+      }
+    },
+    {
+      "latency_s": 1.0538065433502197,
+      "usage": {
+        "prompt_tokens": 411,
+        "completion_tokens": 114
+      }
+    },
+    {
+      "latency_s": 1.1809799671173096,
+      "usage": {
+        "prompt_tokens": 402,
+        "completion_tokens": 128
+      }
+    },
+    {
+      "latency_s": 0.7784950733184814,
+      "usage": {
+        "prompt_tokens": 398,
+        "completion_tokens": 84
+      }
+    },
+    {
+      "latency_s": 1.026458978652954,
+      "usage": {
+        "prompt_tokens": 416,
+        "completion_tokens": 111
+      }
+    },
+    {
+      "latency_s": 0.8812673091888428,
+      "usage": {
+        "prompt_tokens": 413,
+        "completion_tokens": 95
+      }
+    },
+    {
+      "latency_s": 1.1783030033111572,
+      "usage": {
+        "prompt_tokens": 389,
+        "completion_tokens": 128
+      }
+    },
+    {
+      "latency_s": 0.9063429832458496,
+      "usage": {
+        "prompt_tokens": 393,
+        "completion_tokens": 98
+      }
+    },
+    {
+      "latency_s": 0.899940013885498,
+      "usage": {
+        "prompt_tokens": 406,
+        "completion_tokens": 97
+      }
+    },
+    {
+      "latency_s": 0.8908624649047852,
+      "usage": {
+        "prompt_tokens": 401,
+        "completion_tokens": 96
+      }
+    },
+    {
+      "latency_s": 0.9723358154296875,
+      "usage": {
+        "prompt_tokens": 411,
+        "completion_tokens": 105
+      }
+    },
+    {
+      "latency_s": 0.8634519577026367,
+      "usage": {
+        "prompt_tokens": 407,
+        "completion_tokens": 93
+      }
+    },
+    {
+      "latency_s": 1.181321144104004,
+      "usage": {
+        "prompt_tokens": 402,
+        "completion_tokens": 128
+      }
+    }
+  ],
+  "per_request_summary": {
+    "latency_s": {
+      "count": 20,
+      "avg": 1.0780086755752563,
+      "p50": 0.9903624057769775,
+      "p90": 1.181014084815979,
+      "p95": 1.262120032310487,
+      "p99": 2.4902631330490093,
+      "max": 2.7972989082336426,
+      "min": 0.7570474147796631
+    },
+    "completion_tokens": {
+      "count": 20,
+      "avg": 106.15,
+      "p50": 105.5,
+      "p90": 128.0,
+      "p95": 128.0,
+      "p99": 128.0,
+      "max": 128.0,
+      "min": 81.0
+    }
+  },
+  "engine_metrics": [
+    {
+      "name": "vllm:num_requests_running",
+      "type": "gauge",
+      "labels": {
+        "engine": "0",
+        "model_name": "Qwen/Qwen2.5-3B-Instruct"
+      },
+      "value": 0.0
+    },
+    {
+      "name": "vllm:num_requests_waiting",
+      "type": "gauge",
+      "labels": {
+        "engine": "0",
+        "model_name": "Qwen/Qwen2.5-3B-Instruct"
+      },
+      "value": 0.0
+    },
+    {
+      "name": "vllm:kv_cache_usage_perc",
+      "type": "gauge",
+      "labels": {
+        "engine": "0",
+        "model_name": "Qwen/Qwen2.5-3B-Instruct"
+      },
+      "value": 0.0
+    },
+    {
+      "name": "vllm:request_prompt_tokens",
+      "type": "histogram",
+      "labels": {
+        "engine": "0",
+        "model_name": "Qwen/Qwen2.5-3B-Instruct"
+      },
+      "buckets": {
+        "1.0": 0.0,
+        "2.0": 0.0,
+        "5.0": 0.0,
+        "10.0": 0.0,
+        "20.0": 0.0,
+        "50.0": 0.0,
+        "100.0": 0.0,
+        "200.0": 0.0,
+        "500.0": 20.0,
+        "1000.0": 20.0,
+        "2000.0": 20.0,
+        "+Inf": 20.0
+      },
+      "count": 20.0,
+      "sum": 8080.0
+    },
+    {
+      "name": "vllm:request_generation_tokens",
+      "type": "histogram",
+      "labels": {
+        "engine": "0",
+        "model_name": "Qwen/Qwen2.5-3B-Instruct"
+      },
+      "buckets": {
+        "1.0": 0.0,
+        "2.0": 0.0,
+        "5.0": 0.0,
+        "10.0": 0.0,
+        "20.0": 0.0,
+        "50.0": 0.0,
+        "100.0": 9.0,
+        "200.0": 20.0,
+        "500.0": 20.0,
+        "1000.0": 20.0,
+        "2000.0": 20.0,
+        "+Inf": 20.0
+      },
+      "count": 20.0,
+      "sum": 2123.0
+    },
+    {
+      "name": "vllm:time_to_first_token_seconds",
+      "type": "histogram",
+      "labels": {
+        "engine": "0",
+        "model_name": "Qwen/Qwen2.5-3B-Instruct"
+      },
+      "buckets": {
+        "0.001": 0.0,
+        "0.005": 0.0,
+        "0.01": 0.0,
+        "0.02": 19.0,
+        "0.04": 20.0,
+        "0.06": 20.0,
+        "0.08": 20.0,
+        "0.1": 20.0,
+        "0.25": 20.0,
+        "0.5": 20.0,
+        "0.75": 20.0,
+        "1.0": 20.0,
+        "2.5": 20.0,
+        "5.0": 20.0,
+        "7.5": 20.0,
+        "10.0": 20.0,
+        "20.0": 20.0,
+        "40.0": 20.0,
+        "80.0": 20.0,
+        "160.0": 20.0,
+        "640.0": 20.0,
+        "2560.0": 20.0,
+        "+Inf": 20.0
+      },
+      "count": 20.0,
+      "sum": 0.36751604080200195
+    },
+    {
+      "name": "vllm:time_per_output_token_seconds",
+      "type": "histogram",
+      "labels": {
+        "engine": "0",
+        "model_name": "Qwen/Qwen2.5-3B-Instruct"
+      },
+      "buckets": {
+        "0.01": 2101.0,
+        "0.025": 2103.0,
+        "0.05": 2103.0,
+        "0.075": 2103.0,
+        "0.1": 2103.0,
+        "0.15": 2103.0,
+        "0.2": 2103.0,
+        "0.3": 2103.0,
+        "0.4": 2103.0,
+        "0.5": 2103.0,
+        "0.75": 2103.0,
+        "1.0": 2103.0,
+        "2.5": 2103.0,
+        "5.0": 2103.0,
+        "7.5": 2103.0,
+        "10.0": 2103.0,
+        "20.0": 2103.0,
+        "40.0": 2103.0,
+        "80.0": 2103.0,
+        "+Inf": 2103.0
+      },
+      "count": 2103.0,
+      "sum": 19.117777355015278
+    },
+    {
+      "name": "vllm:request_time_per_output_token_seconds",
+      "type": "histogram",
+      "labels": {
+        "engine": "0",
+        "model_name": "Qwen/Qwen2.5-3B-Instruct"
+      },
+      "buckets": {
+        "0.01": 20.0,
+        "0.025": 20.0,
+        "0.05": 20.0,
+        "0.075": 20.0,
+        "0.1": 20.0,
+        "0.15": 20.0,
+        "0.2": 20.0,
+        "0.3": 20.0,
+        "0.4": 20.0,
+        "0.5": 20.0,
+        "0.75": 20.0,
+        "1.0": 20.0,
+        "2.5": 20.0,
+        "5.0": 20.0,
+        "7.5": 20.0,
+        "10.0": 20.0,
+        "20.0": 20.0,
+        "40.0": 20.0,
+        "80.0": 20.0,
+        "+Inf": 20.0
+      },
+      "count": 20.0,
+      "sum": 0.18183629751526023
+    },
+    {
+      "name": "vllm:e2e_request_latency_seconds",
+      "type": "histogram",
+      "labels": {
+        "engine": "0",
+        "model_name": "Qwen/Qwen2.5-3B-Instruct"
+      },
+      "buckets": {
+        "0.3": 0.0,
+        "0.5": 0.0,
+        "0.8": 2.0,
+        "1.0": 13.0,
+        "1.5": 20.0,
+        "2.0": 20.0,
+        "2.5": 20.0,
+        "5.0": 20.0,
+        "10.0": 20.0,
+        "15.0": 20.0,
+        "20.0": 20.0,
+        "30.0": 20.0,
+        "40.0": 20.0,
+        "50.0": 20.0,
+        "60.0": 20.0,
+        "120.0": 20.0,
+        "240.0": 20.0,
+        "480.0": 20.0,
+        "960.0": 20.0,
+        "1920.0": 20.0,
+        "7680.0": 20.0,
+        "+Inf": 20.0
+      },
+      "count": 20.0,
+      "sum": 19.486719369888306
+    },
+    {
+      "name": "vllm:request_queue_time_seconds",
+      "type": "histogram",
+      "labels": {
+        "engine": "0",
+        "model_name": "Qwen/Qwen2.5-3B-Instruct"
+      },
+      "buckets": {
+        "0.3": 20.0,
+        "0.5": 20.0,
+        "0.8": 20.0,
+        "1.0": 20.0,
+        "1.5": 20.0,
+        "2.0": 20.0,
+        "2.5": 20.0,
+        "5.0": 20.0,
+        "10.0": 20.0,
+        "15.0": 20.0,
+        "20.0": 20.0,
+        "30.0": 20.0,
+        "40.0": 20.0,
+        "50.0": 20.0,
+        "60.0": 20.0,
+        "120.0": 20.0,
+        "240.0": 20.0,
+        "480.0": 20.0,
+        "960.0": 20.0,
+        "1920.0": 20.0,
+        "7680.0": 20.0,
+        "+Inf": 20.0
+      },
+      "count": 20.0,
+      "sum": 0.0007432475686073303
+    },
+    {
+      "name": "vllm:request_inference_time_seconds",
+      "type": "histogram",
+      "labels": {
+        "engine": "0",
+        "model_name": "Qwen/Qwen2.5-3B-Instruct"
+      },
+      "buckets": {
+        "0.3": 0.0,
+        "0.5": 0.0,
+        "0.8": 2.0,
+        "1.0": 13.0,
+        "1.5": 20.0,
+        "2.0": 20.0,
+        "2.5": 20.0,
+        "5.0": 20.0,
+        "10.0": 20.0,
+        "15.0": 20.0,
+        "20.0": 20.0,
+        "30.0": 20.0,
+        "40.0": 20.0,
+        "50.0": 20.0,
+        "60.0": 20.0,
+        "120.0": 20.0,
+        "240.0": 20.0,
+        "480.0": 20.0,
+        "960.0": 20.0,
+        "1920.0": 20.0,
+        "7680.0": 20.0,
+        "+Inf": 20.0
+      },
+      "count": 20.0,
+      "sum": 19.44730429723859
+    },
+    {
+      "name": "vllm:request_prefill_time_seconds",
+      "type": "histogram",
+      "labels": {
+        "engine": "0",
+        "model_name": "Qwen/Qwen2.5-3B-Instruct"
+      },
+      "buckets": {
+        "0.3": 20.0,
+        "0.5": 20.0,
+        "0.8": 20.0,
+        "1.0": 20.0,
+        "1.5": 20.0,
+        "2.0": 20.0,
+        "2.5": 20.0,
+        "5.0": 20.0,
+        "10.0": 20.0,
+        "15.0": 20.0,
+        "20.0": 20.0,
+        "30.0": 20.0,
+        "40.0": 20.0,
+        "50.0": 20.0,
+        "60.0": 20.0,
+        "120.0": 20.0,
+        "240.0": 20.0,
+        "480.0": 20.0,
+        "960.0": 20.0,
+        "1920.0": 20.0,
+        "7680.0": 20.0,
+        "+Inf": 20.0
+      },
+      "count": 20.0,
+      "sum": 0.32952694222331047
+    },
+    {
+      "name": "vllm:request_decode_time_seconds",
+      "type": "histogram",
+      "labels": {
+        "engine": "0",
+        "model_name": "Qwen/Qwen2.5-3B-Instruct"
+      },
+      "buckets": {
+        "0.3": 0.0,
+        "0.5": 0.0,
+        "0.8": 2.0,
+        "1.0": 14.0,
+        "1.5": 20.0,
+        "2.0": 20.0,
+        "2.5": 20.0,
+        "5.0": 20.0,
+        "10.0": 20.0,
+        "15.0": 20.0,
+        "20.0": 20.0,
+        "30.0": 20.0,
+        "40.0": 20.0,
+        "50.0": 20.0,
+        "60.0": 20.0,
+        "120.0": 20.0,
+        "240.0": 20.0,
+        "480.0": 20.0,
+        "960.0": 20.0,
+        "1920.0": 20.0,
+        "7680.0": 20.0,
+        "+Inf": 20.0
+      },
+      "count": 20.0,
+      "sum": 19.117777355015278
+    }
+  ],
+  "engine_metric_summaries": {
+    "vllm:time_to_first_token_seconds": {
+      "p50": 0.02,
+      "p90": 0.02,
+      "p95": 0.02,
+      "p99": 0.04,
+      "avg": 0.018375802040100097,
+      "min": 0.0,
+      "max": 2560.0
+    },
+    "vllm:time_per_output_token_seconds": {
+      "p50": 0.01,
+      "p90": 0.01,
+      "p95": 0.01,
+      "p99": 0.01,
+      "avg": 0.009090716764153722,
+      "min": 0.0,
+      "max": 80.0
+    },
+    "vllm:request_time_per_output_token_seconds": {
+      "p50": 0.01,
+      "p90": 0.01,
+      "p95": 0.01,
+      "p99": 0.01,
+      "avg": 0.00909181487576301,
+      "min": 0.0,
+      "max": 80.0
+    },
+    "vllm:e2e_request_latency_seconds": {
+      "p50": 1.0,
+      "p90": 1.5,
+      "p95": 1.5,
+      "p99": 1.5,
+      "avg": 0.9743359684944153,
+      "min": 0.0,
+      "max": 7680.0
+    },
+    "vllm:request_queue_time_seconds": {
+      "p50": 0.3,
+      "p90": 0.3,
+      "p95": 0.3,
+      "p99": 0.3,
+      "avg": 3.716237843036652e-05,
+      "min": 0.0,
+      "max": 7680.0
+    },
+    "vllm:request_inference_time_seconds": {
+      "p50": 1.0,
+      "p90": 1.5,
+      "p95": 1.5,
+      "p99": 1.5,
+      "avg": 0.9723652148619294,
+      "min": 0.0,
+      "max": 7680.0
+    },
+    "vllm:request_prefill_time_seconds": {
+      "p50": 0.3,
+      "p90": 0.3,
+      "p95": 0.3,
+      "p99": 0.3,
+      "avg": 0.016476347111165524,
+      "min": 0.0,
+      "max": 7680.0
+    },
+    "vllm:request_decode_time_seconds": {
+      "p50": 1.0,
+      "p90": 1.5,
+      "p95": 1.5,
+      "p99": 1.5,
+      "avg": 0.9558888677507639,
+      "min": 0.0,
+      "max": 7680.0
+    }
+  },
+  "cache_stats": {
+    "prefix_hit_rate": 0.0,
+    "external_prefix_hit_rate": 0.0,
+    "mm_cache_hit_rate": 0.0
+  }
+}
