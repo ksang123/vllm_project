@@ -5,3 +5,4 @@ __pycache__/
 output/
 benchmark_results/
 benchmark.log
+nsys_vllm_profile.nsys-rep
