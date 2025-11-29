@@ -181,7 +181,83 @@ def _hist_summary(metric: dict[str, Any]) -> dict[str, float] | None:
     return out
 
 
-def _wait_for_server(base_url: str, api_key: str, logger, timeout: float = 300.0, interval: float = 2.0) -> None:
+def prepare_server_config(server_cfg: dict[str, Any]) -> dict[str, Any]:
+    host = server_cfg.get("host", "127.0.0.1")
+    port = int(server_cfg.get("port", 8000))
+    base_url = server_cfg.get("base_url") or f"http://{host}:{port}"
+    prepared = dict(server_cfg)
+    prepared.update({"host": host, "port": port, "base_url": base_url})
+    return prepared
+
+
+def build_server_command(server_cfg: dict[str, Any]) -> tuple[list[str], dict[str, str]]:
+    cfg = prepare_server_config(server_cfg)
+    model = cfg.get("model")
+    tokenizer = cfg.get("tokenizer")
+    served_model_name = cfg.get("served_model_name")
+    disable_log_stats = cfg.get("disable_log_stats", False)
+    api_key = cfg.get("api_key", "EMPTY")
+
+    cmd = [
+        sys.executable,
+        "-m",
+        "vllm.entrypoints.openai.api_server",
+        "--host",
+        cfg.get("host", "127.0.0.1"),
+        "--port",
+        str(cfg.get("port", 8000)),
+        "--model",
+        model,
+    ]
+    if tokenizer:
+        cmd.extend(["--tokenizer", tokenizer])
+    if served_model_name:
+        cmd.extend(["--served-model-name", served_model_name])
+    if disable_log_stats:
+        cmd.append("--disable-log-stats")
+    if cfg.get("max_model_len"):
+        cmd.extend(["--max-model-len", str(cfg["max_model_len"])])
+    if cfg.get("gpu_memory_utilization") is not None:
+        cmd.extend(["--gpu-memory-utilization", str(cfg["gpu_memory_utilization"])])
+    if cfg.get("dtype"):
+        cmd.extend(["--dtype", str(cfg["dtype"])])
+    if cfg.get("tensor_parallel_size"):
+        cmd.extend(["--tensor-parallel-size", str(cfg["tensor_parallel_size"])])
+    if cfg.get("quantization"):
+        cmd.extend(["--quantization", str(cfg["quantization"])])
+    if cfg.get("enable_prefix_caching"):
+        cmd.append("--enable-prefix-caching")
+    if cfg.get("tokenizer_mode"):
+        cmd.extend(["--tokenizer-mode", str(cfg["tokenizer_mode"])])
+    if cfg.get("trust_remote_code"):
+        cmd.append("--trust-remote-code")
+    if cfg.get("engine_use_ray"):
+        cmd.append("--engine-use-ray")
+    if cfg.get("max_num_seqs"):
+        cmd.extend(["--max-num-seqs", str(cfg["max_num_seqs"])])
+    if cfg.get("max_num_batched_tokens"):
+        cmd.extend(["--max-num-batched-tokens", str(cfg["max_num_batched_tokens"])])
+    if cfg.get("block_size"):
+        cmd.extend(["--block-size", str(cfg["block_size"])])
+    if cfg.get("swap_space") is not None:
+        cmd.extend(["--swap-space", str(cfg["swap_space"])])
+    if cfg.get("cpu_offload_gb") is not None:
+        cmd.extend(["--cpu-offload-gb", str(cfg["cpu_offload_gb"])])
+    if cfg.get("revision"):
+        cmd.extend(["--revision", str(cfg["revision"])])
+    if cfg.get("code_revision"):
+        cmd.extend(["--code-revision", str(cfg["code_revision"])])
+    if cfg.get("tokenizer_revision"):
+        cmd.extend(["--tokenizer-revision", str(cfg["tokenizer_revision"])])
+    if cfg.get("max_log_len"):
+        cmd.extend(["--max-log-len", str(cfg["max_log_len"])])
+
+    env = os.environ.copy()
+    env.setdefault("VLLM_API_KEY", api_key)
+    return cmd, env
+
+
+def wait_for_server(base_url: str, api_key: str, logger, timeout: float = 300.0, interval: float = 2.0) -> None:
     deadline = time.time() + timeout
     headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
     while time.time() < deadline:
@@ -201,80 +277,17 @@ def _wait_for_server(base_url: str, api_key: str, logger, timeout: float = 300.0
     raise RuntimeError(f"vLLM server did not become ready at {base_url} within {timeout}s")
 
 
-def _start_vllm_server(server_cfg: dict[str, Any], logger) -> subprocess.Popen:
-    host = server_cfg.get("host", "127.0.0.1")
-    port = int(server_cfg.get("port", 8000))
-    model = server_cfg.get("model")
-    tokenizer = server_cfg.get("tokenizer")
-    served_model_name = server_cfg.get("served_model_name")
-    disable_log_stats = server_cfg.get("disable_log_stats", False)
-    api_key = server_cfg.get("api_key", "EMPTY")
-
-    cmd = [
-        sys.executable,
-        "-m",
-        "vllm.entrypoints.openai.api_server",
-        "--host",
-        host,
-        "--port",
-        str(port),
-        "--model",
-        model,
-    ]
-    if tokenizer:
-        cmd.extend(["--tokenizer", tokenizer])
-    if served_model_name:
-        cmd.extend(["--served-model-name", served_model_name])
-    if disable_log_stats:
-        cmd.append("--disable-log-stats")
-    if server_cfg.get("max_model_len"):
-        cmd.extend(["--max-model-len", str(server_cfg["max_model_len"])])
-    if server_cfg.get("gpu_memory_utilization") is not None:
-        cmd.extend(["--gpu-memory-utilization", str(server_cfg["gpu_memory_utilization"])])
-    if server_cfg.get("dtype"):
-        cmd.extend(["--dtype", str(server_cfg["dtype"])])
-    if server_cfg.get("tensor_parallel_size"):
-        cmd.extend(["--tensor-parallel-size", str(server_cfg["tensor_parallel_size"])])
-    if server_cfg.get("quantization"):
-        cmd.extend(["--quantization", str(server_cfg["quantization"])])
-    if server_cfg.get("enable_prefix_caching"):
-        cmd.append("--enable-prefix-caching")
-    if server_cfg.get("tokenizer_mode"):
-        cmd.extend(["--tokenizer-mode", str(server_cfg["tokenizer_mode"])])
-    if server_cfg.get("trust_remote_code"):
-        cmd.append("--trust-remote-code")
-    if server_cfg.get("engine_use_ray"):
-        cmd.append("--engine-use-ray")
-    if server_cfg.get("max_num_seqs"):
-        cmd.extend(["--max-num-seqs", str(server_cfg["max_num_seqs"])])
-    if server_cfg.get("max_num_batched_tokens"):
-        cmd.extend(["--max-num-batched-tokens", str(server_cfg["max_num_batched_tokens"])])
-    if server_cfg.get("block_size"):
-        cmd.extend(["--block-size", str(server_cfg["block_size"])])
-    if server_cfg.get("swap_space") is not None:
-        cmd.extend(["--swap-space", str(server_cfg["swap_space"])])
-    if server_cfg.get("cpu_offload_gb") is not None:
-        cmd.extend(["--cpu-offload-gb", str(server_cfg["cpu_offload_gb"])])
-    if server_cfg.get("revision"):
-        cmd.extend(["--revision", str(server_cfg["revision"])])
-    if server_cfg.get("code_revision"):
-        cmd.extend(["--code-revision", str(server_cfg["code_revision"])])
-    if server_cfg.get("tokenizer_revision"):
-        cmd.extend(["--tokenizer-revision", str(server_cfg["tokenizer_revision"])])
-    if server_cfg.get("max_log_len"):
-        cmd.extend(["--max-log-len", str(server_cfg["max_log_len"])])
-
-    env = os.environ.copy()
-    env.setdefault("VLLM_API_KEY", api_key)
-
+def start_vllm_server(server_cfg: dict[str, Any], logger, wait_for_ready: bool = True) -> subprocess.Popen:
+    prepared = prepare_server_config(server_cfg)
+    cmd, env = build_server_command(prepared)
     logger.info(f"Starting vLLM server: {' '.join(cmd)}")
     proc = subprocess.Popen(cmd, env=env)
-    base_url = f"http://{host}:{port}"
-    _wait_for_server(base_url, api_key, logger)
+    if wait_for_ready:
+        wait_for_server(prepared["base_url"], prepared.get("api_key", "EMPTY"), logger)
     return proc
 
 
-def _stop_vllm_server(proc: subprocess.Popen, logger) -> None:
+def stop_vllm_server(proc: subprocess.Popen, logger) -> None:
     if proc:
         proc.terminate()
         try:
@@ -284,19 +297,22 @@ def _stop_vllm_server(proc: subprocess.Popen, logger) -> None:
             proc.kill()
 
 
-def run_vllm(prompts: list[str], config: dict[str, Any], logger, debug: bool = False) -> dict[str, Any]:
+def run_client(
+    prompts: list[str],
+    config: dict[str, Any],
+    logger,
+    debug: bool = False,
+    wait_for_server_ready: bool = True,
+    server_cfg_override: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     benchmark_cfg = config.get("benchmark_config", {})
-    server_cfg = config.get("server_config", {})
+    server_cfg = server_cfg_override or config.get("server_config", {})
     output_cfg = config.get("output_config", {})
     telemetry_cfg = config.get("telemetry_config", {})
 
-    host = server_cfg.get("host", "127.0.0.1")
-    port = int(server_cfg.get("port", 8000))
-    base_url = server_cfg.get("base_url") or f"http://{host}:{port}"
-    server_cfg = {**server_cfg, "base_url": base_url}
-
-    logger.info(f"Starting vLLM server on {server_cfg.get('host', '127.0.0.1')}:{server_cfg.get('port', 8000)}")
-    server_proc = _start_vllm_server(server_cfg, logger)
+    server_cfg = prepare_server_config(server_cfg)
+    if wait_for_server_ready:
+        wait_for_server(server_cfg["base_url"], server_cfg.get("api_key", "EMPTY"), logger)
 
     # Warmup if requested
     warmup_n = int(benchmark_cfg.get("warmup_prompts", 0))
@@ -367,7 +383,6 @@ def run_vllm(prompts: list[str], config: dict[str, Any], logger, debug: bool = F
     try:
         send_result = send_requests(prompts, server_cfg, benchmark_cfg, logger)
     finally:
-        _stop_vllm_server(server_proc, logger)
         stop_telemetry = True
         if telemetry_thread:
             telemetry_thread.join(timeout=2)
@@ -474,6 +489,16 @@ def run_vllm(prompts: list[str], config: dict[str, Any], logger, debug: bool = F
         render_all(results, base_out_dir=out_dir)
 
     return results
+
+
+def run_vllm(prompts: list[str], config: dict[str, Any], logger, debug: bool = False) -> dict[str, Any]:
+    server_cfg = prepare_server_config(config.get("server_config", {}))
+    logger.info(f"Starting vLLM server on {server_cfg.get('host', '127.0.0.1')}:{server_cfg.get('port', 8000)}")
+    server_proc = start_vllm_server(server_cfg, logger, wait_for_ready=True)
+    try:
+        return run_client(prompts, config, logger, debug=debug, wait_for_server_ready=False, server_cfg_override=server_cfg)
+    finally:
+        stop_vllm_server(server_proc, logger)
 
 
 def dump_results(results: dict[str, Any], path: str, logger) -> None:

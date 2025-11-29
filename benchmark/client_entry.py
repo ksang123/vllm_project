@@ -8,13 +8,12 @@ from pathlib import Path
 from config_handler import load_config
 from logger import setup_logger
 from prompt_loader import load_prompts
-from vllm_runner import run_vllm, dump_results
+from vllm_runner import dump_results, run_client
 
 
-def main():
-    # Suppress noisy pynvml deprecation warnings surfaced by torch.
+def main() -> None:
     warnings.filterwarnings("ignore", category=FutureWarning, message="The pynvml package is deprecated.*")
-    parser = argparse.ArgumentParser(description="Run vLLM benchmark.")
+    parser = argparse.ArgumentParser(description="Send prompts to an already-running vLLM server.")
     parser.add_argument("--config", default="bench_config.yaml", help="Path to bench_config.yaml")
     parser.add_argument("--debug", action="store_true", help="Include generated texts/config in output")
     args = parser.parse_args()
@@ -40,20 +39,16 @@ def main():
         logger,
     )
     if not prompts:
-        logger.error("No prompts were loaded; aborting benchmark run.")
+        logger.error("No prompts were loaded; aborting request sending.")
         return
 
-    # Run benchmark and capture results
-    results = run_vllm(prompts, config, logger, debug=args.debug)
+    results = run_client(prompts, config, logger, debug=args.debug, wait_for_server_ready=True)
 
     output_cfg = config.get("output_config", {})
     out_dir = Path(output_cfg.get("output_dir", "./output"))
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # If charts are saved, render_all already wrote to a timestamped folder.
-    # Place results.json alongside the latest charts when available.
     if output_cfg.get("save_charts", True):
-        # The render_all function creates a timestamped subfolder; find the latest one.
         subdirs = [p for p in out_dir.iterdir() if p.is_dir()]
         if subdirs:
             latest = max(subdirs, key=lambda p: p.stat().st_mtime)
