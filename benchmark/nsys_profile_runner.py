@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import shutil
 import signal
 import subprocess
 import sys
@@ -11,7 +12,12 @@ from pathlib import Path
 
 from config_handler import load_config
 from logger import setup_logger
-from vllm_runner import build_server_command, prepare_server_config, wait_for_server
+from vllm_runner import (
+    build_server_command,
+    prepare_server_config,
+    stop_vllm_server,
+    wait_for_server,
+)
 
 
 def main() -> None:
@@ -20,12 +26,27 @@ def main() -> None:
     parser.add_argument("--config", default="bench_config.yaml", help="Path to bench_config.yaml")
     parser.add_argument("--debug", action="store_true", help="Include generated texts/config in client output")
     parser.add_argument("--nsys-output", default="nsys_vllm_profile", help="Base name for nsys output files")
-    parser.add_argument("--nsys-trace", default="cuda,nvtx,osrt", help="Comma-separated nsys trace domains")
+    parser.add_argument(
+        "--nsys-trace",
+        default="cuda",
+        help="Comma-separated nsys trace domains (defaults to 'cuda' safe-mode).",
+    )
     parser.add_argument(
         "--nsys-delay",
         type=float,
         default=5.0,
         help="Seconds to delay nsys capture so profiling starts after server init.",
+    )
+    parser.add_argument(
+        "--nsys-duration",
+        type=int,
+        default=60,
+        help="Duration in seconds to capture with nsys before stopping the server.",
+    )
+    parser.add_argument(
+        "--nsys-bin",
+        default=os.environ.get("NSYS_BIN", "nsys"),
+        help="Path to nsys binary (defaults to $NSYS_BIN or 'nsys' on PATH)",
     )
     parser.add_argument("--wait-timeout", type=float, default=300.0, help="Seconds to wait for server readiness")
     args = parser.parse_args()
@@ -38,23 +59,42 @@ def main() -> None:
     setup_logger(log_file)
     logger = logging.getLogger("vllm_benchmark")
 
+    nsys_bin = args.nsys_bin
+    if not os.path.isabs(nsys_bin):
+        resolved = shutil.which(nsys_bin)
+    else:
+        resolved = nsys_bin if Path(nsys_bin).exists() else None
+    if not resolved:
+        raise SystemExit(f"nsys binary not found: {nsys_bin}. Set --nsys-bin or $NSYS_BIN to a valid path.")
+
     server_cfg = prepare_server_config(config.get("server_config", {}))
     server_cmd, env = build_server_command(server_cfg)
-
+    # Use spawn for safety with profiling.
+    env["VLLM_WORKER_MULTIPROC_METHOD"] = "spawn"
     nsys_cmd = [
-        "nsys",
+        resolved,
         "profile",
         "--output",
         args.nsys_output,
         "--trace",
         args.nsys_trace,
         "--sample",
-        "cpu",
+        "none",
+        "--cpuctxsw",
+        "none",
+        "--trace-fork-before-exec",
+        "true",
+        "--cuda-graph-trace",
+        "node",
+        "--force-overwrite",
+        "true",
+        "--duration",
+        str(args.nsys_duration),
     ]
     if args.nsys_delay and args.nsys_delay > 0:
         nsys_cmd.extend(["--delay", str(args.nsys_delay)])
-    full_cmd = nsys_cmd + server_cmd
 
+    full_cmd = nsys_cmd + server_cmd
     logger.info(f"Launching vLLM under nsys: {' '.join(full_cmd)}")
     server_proc = subprocess.Popen(
         full_cmd,
@@ -93,27 +133,14 @@ def main() -> None:
         logger.warning(f"Request sender exited with code {client_rc}")
 
     logger.info("Stopping profiled vLLM server...")
-    try:
-        if hasattr(os, "killpg"):
-            os.killpg(server_proc.pid, signal.SIGINT)
-        else:
-            server_proc.terminate()
-    except ProcessLookupError:
-        pass
-    except Exception:
-        server_proc.terminate()
+    stop_vllm_server(server_proc, logger)
 
-    try:
-        server_proc.wait(timeout=20)
-    except subprocess.TimeoutExpired:
-        logger.warning("vLLM server did not shut down cleanly after profiling; forcing exit.")
-        try:
-            if hasattr(os, "killpg"):
-                os.killpg(server_proc.pid, signal.SIGKILL)
-            else:
-                server_proc.kill()
-        except Exception:
-            server_proc.kill()
+    # Check for expected nsys output.
+    expected = Path(args.nsys_output).with_suffix(".nsys-rep")
+    if expected.exists():
+        logger.info(f"nsys report written: {expected}")
+    else:
+        logger.warning(f"nsys report {expected} not found; ensure nsys was available on PATH or via --nsys-bin.")
 
 
 if __name__ == "__main__":

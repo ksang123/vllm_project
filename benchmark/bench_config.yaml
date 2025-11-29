@@ -4,15 +4,15 @@ log_config:
   log_file: "benchmark.log"
 
 server_config:
-  model: "Qwen/Qwen3-14B"
+  model: "Qwen/Qwen2.5-3B"
   api_key: "EMPTY"
   host: "127.0.0.1"
   port: 8000
   base_url: null  # auto-derived from host/port if null
   max_model_len: 32768
-  gpu_memory_utilization: 0.9
+  gpu_memory_utilization: 0.6
   dtype: "auto"
-  tensor_parallel_size: 2
+  tensor_parallel_size: 1
   quantization: null
   enable_prefix_caching: true
   tokenizer_mode: "auto"
@@ -30,7 +30,7 @@ benchmark_config:
   dataset_name: "random"
   prompts_dir: "./prompts"
   num_prompts: 2000
-  warmup_prompts: 100
+  warmup_prompts: 300
   client_processes: 32
   max_concurrency: 32
   target_rps: "inf"   # overall target requests per second ("inf" for max)
